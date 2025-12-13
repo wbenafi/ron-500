@@ -9,10 +9,12 @@ import RoundInput from '@/components/RoundInput';
 import RoundHistory from '@/components/RoundHistory';
 import WinnerModal from '@/components/WinnerModal';
 import Button from '@/components/ui/Button';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export default function GamePage() {
   const router = useRouter();
   const { state, addRound, undoLastRound, resetGame, finishGame } = useGame();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [showRoundInput, setShowRoundInput] = useState(false);
   const isClient = typeof window !== 'undefined';
 
@@ -31,6 +33,21 @@ export default function GamePage() {
   const handleViewStats = () => {
     resetGame();
     router.push('/stats');
+  };
+
+  const handleFinishClick = async () => {
+    const confirmed = await confirm({
+      title: "Terminar partida",
+      message: "¿Estás seguro de que quieres terminar la partida? La partida se guardará en las estadísticas con las puntuaciones actuales.",
+      confirmText: "Terminar",
+      cancelText: "Cancelar",
+      variant: "danger",
+    });
+
+    if (confirmed) {
+      finishGame();
+      handleNewGame();
+    }
   };
 
   if (!isClient || state.players.length === 0) {
@@ -63,12 +80,7 @@ export default function GamePage() {
         <Button
           variant="danger"
           size="sm"
-          onClick={() => {
-            if (confirm('¿Estás seguro de que quieres terminar la partida? La partida se guardará en las estadísticas con las puntuaciones actuales.')) {
-              finishGame();
-              handleNewGame();
-            }
-          }}
+          onClick={handleFinishClick}
         >
           Terminar
         </Button>
@@ -133,6 +145,8 @@ export default function GamePage() {
         onNewGame={handleNewGame}
         onViewStats={handleViewStats}
       />
+
+      <ConfirmDialog />
     </main>
   );
 }

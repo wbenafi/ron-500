@@ -5,9 +5,12 @@ import Link from "next/link";
 import { getStats, clearStats, deleteGameFromStats } from "@/utils/storage";
 import { GameStats, CompletedGame } from "@/types/game";
 import Button from "@/components/ui/Button";
+import { useConfirm } from "@/hooks/useConfirm";
 
 export default function StatsPage() {
   const isClient = typeof window !== "undefined";
+  const { confirm, ConfirmDialog } = useConfirm();
+  
   // Use lazy initialization to avoid calling setState in useEffect
   const [stats, setStats] = useState<GameStats>(() => {
     if (typeof window === "undefined")
@@ -15,19 +18,32 @@ export default function StatsPage() {
     return getStats();
   });
 
-  const handleClearStats = () => {
-    if (
-      confirm("¿Estás seguro de que quieres borrar todas las estadísticas?")
-    ) {
+  const handleClearStatsClick = async () => {
+    const confirmed = await confirm({
+      title: "Eliminar todas las estadísticas",
+      message: "¿Estás seguro de que quieres borrar todas las estadísticas? Esta acción no se puede deshacer.",
+      confirmText: "Eliminar todo",
+      cancelText: "Cancelar",
+      variant: "danger",
+    });
+
+    if (confirmed) {
       clearStats();
       setStats({ gamesPlayed: 0, gamesHistory: [] });
     }
   };
 
-  const handleDeleteGame = (gameId: string) => {
-    if (confirm("¿Estás seguro de que quieres eliminar esta partida?")) {
+  const handleDeleteGameClick = async (gameId: string) => {
+    const confirmed = await confirm({
+      title: "Eliminar partida",
+      message: "¿Estás seguro de que quieres eliminar esta partida? Esta acción no se puede deshacer.",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      variant: "danger",
+    });
+
+    if (confirmed) {
       deleteGameFromStats(gameId);
-      // Refresh stats from localStorage
       const updatedStats = getStats();
       setStats(updatedStats);
     }
@@ -93,7 +109,7 @@ export default function StatsPage() {
         </h1>
 
         {stats.gamesPlayed > 0 && (
-          <Button variant="ghost" size="sm" onClick={handleClearStats}>
+          <Button variant="ghost" size="sm" onClick={handleClearStatsClick}>
             Limpiar
           </Button>
         )}
@@ -156,7 +172,7 @@ export default function StatsPage() {
                     </p>
                   </div>
                   <button
-                    onClick={() => handleDeleteGame(game.id)}
+                    onClick={() => handleDeleteGameClick(game.id)}
                     className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 active:bg-rose-500/20 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 touch-manipulation"
                     aria-label="Eliminar partida"
                     title="Eliminar partida"
@@ -204,6 +220,8 @@ export default function StatsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog />
     </main>
   );
 }
