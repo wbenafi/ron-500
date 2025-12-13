@@ -40,11 +40,11 @@ body {
 /* Confetti animation */
 @keyframes confetti {
   0% {
-    transform: translateY(-100dvh) rotate(0deg);
+    transform: translateY(-100svh) rotate(0deg);
     opacity: 1;
   }
   100% {
-    transform: translateY(100dvh) rotate(720deg);
+    transform: translateY(100svh) rotate(720deg);
     opacity: 0;
   }
 }

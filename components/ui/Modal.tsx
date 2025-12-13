@@ -56,7 +56,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
           border-t sm:border border-slate-700/50
           rounded-t-3xl sm:rounded-2xl shadow-2xl
           animate-in slide-in-from-bottom sm:zoom-in-95 duration-200
-          max-h-[90dvh] sm:max-h-[85dvh] overflow-y-auto
+          max-h-[90svh] sm:max-h-[85svh] overflow-y-auto
         `}
       >
         {title && (

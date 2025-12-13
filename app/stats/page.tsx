@@ -33,14 +33,14 @@ export default function StatsPage() {
 
   if (!isClient) {
     return (
-      <div className="h-dvh flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <div className="animate-pulse text-slate-400">Cargando...</div>
       </div>
     );
   }
 
   return (
-    <main className="h-dvh p-4 md:p-6 max-w-4xl mx-auto pb-20">
+    <main className="h-full p-4 md:p-6 max-w-4xl mx-auto pb-20">
       {/* Header */}
       <header className="flex items-center justify-between mb-8">
         <Link
