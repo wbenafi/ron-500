@@ -1,33 +1,45 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { getStats, clearStats } from '@/utils/storage';
-import { GameStats, CompletedGame } from '@/types/game';
-import Button from '@/components/ui/Button';
+import { useState } from "react";
+import Link from "next/link";
+import { getStats, clearStats, deleteGameFromStats } from "@/utils/storage";
+import { GameStats, CompletedGame } from "@/types/game";
+import Button from "@/components/ui/Button";
 
 export default function StatsPage() {
-  const isClient = typeof window !== 'undefined';
+  const isClient = typeof window !== "undefined";
   // Use lazy initialization to avoid calling setState in useEffect
   const [stats, setStats] = useState<GameStats>(() => {
-    if (typeof window === 'undefined') return { gamesPlayed: 0, gamesHistory: [] };
+    if (typeof window === "undefined")
+      return { gamesPlayed: 0, gamesHistory: [] };
     return getStats();
   });
 
   const handleClearStats = () => {
-    if (confirm('¿Estás seguro de que quieres borrar todas las estadísticas?')) {
+    if (
+      confirm("¿Estás seguro de que quieres borrar todas las estadísticas?")
+    ) {
       clearStats();
       setStats({ gamesPlayed: 0, gamesHistory: [] });
     }
   };
 
+  const handleDeleteGame = (gameId: string) => {
+    if (confirm("¿Estás seguro de que quieres eliminar esta partida?")) {
+      deleteGameFromStats(gameId);
+      // Refresh stats from localStorage
+      const updatedStats = getStats();
+      setStats(updatedStats);
+    }
+  };
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(dateString).toLocaleDateString("es", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -47,15 +59,35 @@ export default function StatsPage() {
           href="/"
           className="flex items-center text-slate-400 hover:text-white transition-colors"
         >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Inicio
         </Link>
 
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <svg className="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          <svg
+            className="w-7 h-7 text-violet-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
           </svg>
           Estadísticas
         </h1>
@@ -81,34 +113,68 @@ export default function StatsPage() {
       {stats.gamesHistory.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-7xl mb-4">📊</div>
-          <h2 className="text-2xl font-bold text-white mb-2">Sin partidas registradas</h2>
-          <p className="text-slate-400 mb-6">Juega una partida completa para ver estadísticas</p>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Sin partidas registradas
+          </h2>
+          <p className="text-slate-400 mb-6">
+            Juega una partida completa para ver estadísticas
+          </p>
           <Link href="/">
-            <Button variant="primary">
-              Iniciar Partida
-            </Button>
+            <Button variant="primary">Iniciar Partida</Button>
           </Link>
         </div>
       ) : (
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-white mb-4">Historial de Partidas</h2>
-          
+          <h2 className="text-xl font-bold text-white mb-4">
+            Historial de Partidas
+          </h2>
+
           {stats.gamesHistory.map((game: CompletedGame) => (
             <div
               key={game.id}
-              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5 relative group"
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-2xl">🏆</span>
-                    <span className="text-xl font-bold text-white">{game.winner.name}</span>
+                    <span className="text-xl font-bold text-white">
+                      {game.winner.name}
+                    </span>
                   </div>
-                  <p className="text-emerald-400 font-semibold">{game.winner.totalScore} puntos</p>
+                  <p className="text-emerald-400 font-semibold">
+                    {game.winner.totalScore} puntos
+                  </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-slate-400">{formatDate(game.finishedAt)}</p>
-                  <p className="text-sm text-slate-500">{game.rounds} rondas</p>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <p className="text-sm text-slate-400">
+                      {formatDate(game.finishedAt)}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {game.rounds} rondas
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteGame(game.id)}
+                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 active:bg-rose-500/20 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 touch-manipulation"
+                    aria-label="Eliminar partida"
+                    title="Eliminar partida"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
@@ -122,9 +188,10 @@ export default function StatsPage() {
                         key={player.id}
                         className={`
                           px-3 py-1 rounded-full text-sm
-                          ${index === 0 
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-                            : 'bg-slate-700/50 text-slate-300'
+                          ${
+                            index === 0
+                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                              : "bg-slate-700/50 text-slate-300"
                           }
                         `}
                       >
@@ -140,4 +207,3 @@ export default function StatsPage() {
     </main>
   );
 }
-

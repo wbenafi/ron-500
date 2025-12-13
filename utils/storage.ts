@@ -120,6 +120,23 @@ export function clearStats(): void {
   }
 }
 
+export function deleteGameFromStats(gameId: string): void {
+  if (typeof window === 'undefined') return;
+  
+  const stats = getStats();
+  const initialLength = stats.gamesHistory.length;
+  
+  // Remove the game from history
+  stats.gamesHistory = stats.gamesHistory.filter(game => game.id !== gameId);
+  
+  // Update gamesPlayed count if a game was actually removed
+  if (stats.gamesHistory.length < initialLength) {
+    stats.gamesPlayed = Math.max(0, stats.gamesPlayed - 1);
+  }
+  
+  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+}
+
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 }
