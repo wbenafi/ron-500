@@ -23,6 +23,10 @@ export function loadCurrentGame(): GameState | null {
           ignoredScores: round.ignoredScores || {},
         }));
       }
+      // Normalizar playerAddedEvents para juegos antiguos
+      if (!parsed.playerAddedEvents || !Array.isArray(parsed.playerAddedEvents)) {
+        parsed.playerAddedEvents = [];
+      }
       // Normalizar winningScore para juegos antiguos (por defecto 500)
       if (typeof parsed.winningScore !== 'number') {
         parsed.winningScore = 500;

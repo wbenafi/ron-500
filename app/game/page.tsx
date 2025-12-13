@@ -8,14 +8,16 @@ import ScoreBoard from '@/components/ScoreBoard';
 import RoundInput from '@/components/RoundInput';
 import RoundHistory from '@/components/RoundHistory';
 import WinnerModal from '@/components/WinnerModal';
+import AddPlayerModal from '@/components/AddPlayerModal';
 import Button from '@/components/ui/Button';
 import { useConfirm } from '@/hooks/useConfirm';
 
 export default function GamePage() {
   const router = useRouter();
-  const { state, addRound, undoLastRound, resetGame, finishGame } = useGame();
+  const { state, addRound, addPlayer, undoLastRound, resetGame, finishGame } = useGame();
   const { confirm, ConfirmDialog } = useConfirm();
   const [showRoundInput, setShowRoundInput] = useState(false);
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const isClient = typeof window !== 'undefined';
 
   // Redirect to home if no game is active
@@ -33,6 +35,17 @@ export default function GamePage() {
   const handleViewStats = () => {
     resetGame();
     router.push('/stats');
+  };
+
+  const calculateAverageScore = () => {
+    if (state.players.length === 0) return 0;
+    const sum = state.players.reduce((acc, player) => acc + player.totalScore, 0);
+    return sum / state.players.length;
+  };
+
+  const handleAddPlayer = (name: string, initialScore: number) => {
+    addPlayer(name, initialScore);
+    setShowAddPlayerModal(false);
   };
 
   const handleFinishClick = async () => {
@@ -117,7 +130,11 @@ export default function GamePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Scoreboard */}
         <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-5">
-          <ScoreBoard players={state.players} targetScore={state.winningScore} />
+          <ScoreBoard 
+            players={state.players} 
+            targetScore={state.winningScore}
+            onAddPlayer={() => setShowAddPlayerModal(true)}
+          />
         </div>
 
         {/* History */}
@@ -125,6 +142,7 @@ export default function GamePage() {
           <RoundHistory
             rounds={state.rounds}
             players={state.players}
+            playerAddedEvents={state.playerAddedEvents}
             onUndo={undoLastRound}
             winningScore={state.winningScore}
           />
@@ -146,6 +164,15 @@ export default function GamePage() {
         winner={state.winner}
         onNewGame={handleNewGame}
         onViewStats={handleViewStats}
+      />
+
+      {/* Add Player Modal */}
+      <AddPlayerModal
+        isOpen={showAddPlayerModal}
+        onClose={() => setShowAddPlayerModal(false)}
+        onAdd={handleAddPlayer}
+        averageScore={calculateAverageScore()}
+        existingNames={state.players.map(p => p.name)}
       />
 
       <ConfirmDialog />

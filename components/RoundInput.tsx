@@ -40,7 +40,7 @@ export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onC
   };
 
   const handleQuickScore = (playerId: string, amount: number) => {
-    const current = scores[playerId] === '' || scores[playerId] === '-' ? 0 : parseInt(scores[playerId], 10);
+    const current = !scores[playerId] || scores[playerId] === '' || scores[playerId] === '-' ? 0 : parseInt(scores[playerId], 10);
     setScores(prev => ({ ...prev, [playerId]: String(current + amount) }));
   };
 
@@ -87,7 +87,7 @@ export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onC
               <input
                 type="text"
                 inputMode="numeric"
-                value={scores[player.id]}
+                value={scores[player.id] ?? '0'}
                 onChange={(e) => updateScore(player.id, e.target.value)}
                 placeholder="0"
                 className="w-full sm:flex-1 px-3 sm:px-4 py-3 sm:py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white text-center text-xl sm:text-lg font-bold placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[48px] touch-manipulation"

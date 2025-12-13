@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useReducer, useEffect, useRef, ReactNode } from 'react';
-import { GameState, GameAction, Player, Round } from '@/types/game';
+import { GameState, GameAction, Player, Round, PlayerAddedEvent } from '@/types/game';
 import { saveCurrentGame, loadCurrentGame, clearCurrentGame, saveCompletedGame, finishGameManually, generateId } from '@/utils/storage';
 
 const DEFAULT_WINNING_SCORE = 500;
@@ -10,6 +10,7 @@ const initialState: GameState = {
   id: '',
   players: [],
   rounds: [],
+  playerAddedEvents: [],
   winner: null,
   startedAt: '',
   finishedAt: null,
@@ -79,6 +80,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         players: action.players,
         winningScore: action.winningScore,
         startedAt: new Date().toISOString(),
+        playerAddedEvents: [],
       };
       return newState;
     }
@@ -113,6 +115,43 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
       
       return newState;
+    }
+    
+    case 'ADD_PLAYER': {
+      // Recalcular totales para jugadores existentes
+      const existingPlayersWithScores = calculateTotalScores(state.players, state.rounds, state.winningScore);
+      
+      // Crear nuevo jugador con su puntuación inicial
+      const newPlayerId = generateId();
+      const newPlayer: Player = {
+        id: newPlayerId,
+        name: action.name,
+        totalScore: action.initialScore,
+      };
+      
+      // Crear evento de jugador agregado
+      const playerAddedEvent: PlayerAddedEvent = {
+        id: generateId(),
+        type: 'player_added',
+        playerId: newPlayerId,
+        playerName: action.name,
+        initialScore: action.initialScore,
+        timestamp: new Date().toISOString(),
+      };
+      
+      // El nuevo jugador no tiene rondas previas, así que su total es su puntuación inicial
+      // Pero necesitamos aplicar la regla del winningScore si su initialScore ya supera el límite
+      // En este caso, como es un nuevo jugador, simplemente usamos su initialScore
+      const updatedPlayers = [...existingPlayersWithScores, newPlayer];
+      const winner = checkWinner(updatedPlayers, state.winningScore);
+      
+      return {
+        ...state,
+        players: updatedPlayers,
+        playerAddedEvents: [...state.playerAddedEvents, playerAddedEvent],
+        winner,
+        finishedAt: winner ? new Date().toISOString() : null,
+      };
     }
     
     case 'UNDO_ROUND': {
@@ -157,6 +196,7 @@ interface GameContextType {
   dispatch: React.Dispatch<GameAction>;
   startNewGame: (playerNames: string[], winningScore?: number) => void;
   addRound: (scores: Record<string, number>) => void;
+  addPlayer: (name: string, initialScore: number) => void;
   undoLastRound: () => void;
   resetGame: () => void;
   finishGame: () => void;
@@ -203,6 +243,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'ADD_ROUND', scores });
   };
 
+  const addPlayer = (name: string, initialScore: number) => {
+    dispatch({ type: 'ADD_PLAYER', name, initialScore });
+  };
+
   const undoLastRound = () => {
     dispatch({ type: 'UNDO_ROUND' });
   };
@@ -234,6 +278,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         dispatch,
         startNewGame,
         addRound,
+        addPlayer,
         undoLastRound,
         resetGame,
         finishGame,

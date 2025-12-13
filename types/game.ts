@@ -12,10 +12,22 @@ export interface Round {
   ignoredScores?: Record<string, boolean>; // playerId -> si los puntos fueron ignorados
 }
 
+export interface PlayerAddedEvent {
+  id: string;
+  type: 'player_added';
+  playerId: string;
+  playerName: string;
+  initialScore: number;
+  timestamp: string;
+}
+
+export type GameEvent = Round | PlayerAddedEvent;
+
 export interface GameState {
   id: string;
   players: Player[];
   rounds: Round[];
+  playerAddedEvents: PlayerAddedEvent[]; // Eventos de jugadores agregados
   winner: Player | null;
   startedAt: string;
   finishedAt: string | null;
@@ -39,6 +51,7 @@ export interface GameStats {
 export type GameAction =
   | { type: 'SET_PLAYERS'; players: Player[]; winningScore: number }
   | { type: 'ADD_ROUND'; scores: Record<string, number> }
+  | { type: 'ADD_PLAYER'; name: string; initialScore: number }
   | { type: 'UNDO_ROUND' }
   | { type: 'SET_WINNER'; winner: Player }
   | { type: 'RESET_GAME' }
