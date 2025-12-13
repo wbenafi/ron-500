@@ -10,7 +10,7 @@ import { loadCurrentGame, getStats } from "@/utils/storage";
 
 export default function Home() {
   const router = useRouter();
-  const { startNewGame, loadSavedGame } = useGame();
+  const { startNewGame, loadSavedGame, state } = useGame();
   const [showSetup, setShowSetup] = useState(false);
   // Use lazy initialization to avoid calling setState in useEffect
   const [hasSavedGame] = useState(() => {
@@ -21,9 +21,13 @@ export default function Home() {
     if (typeof window === "undefined") return { gamesPlayed: 0 };
     return getStats();
   });
+  
+  // Get winning score from saved game or default to 500
+  const savedGame = typeof window !== "undefined" ? loadCurrentGame() : null;
+  const displayWinningScore = savedGame?.winningScore || state.winningScore || 500;
 
-  const handleStartGame = (players: string[]) => {
-    startNewGame(players);
+  const handleStartGame = (players: string[], winningScore: number) => {
+    startNewGame(players, winningScore);
     router.push("/game");
   };
 
@@ -40,7 +44,7 @@ export default function Home() {
             {/* Logo/Title */}
             <div className="mb-8">
               <div className="text-7xl mb-4">🃏</div>
-              <h1 className="text-5xl font-bold gradient-text mb-3">RON 500</h1>
+              <h1 className="text-5xl font-bold gradient-text mb-3">RON {displayWinningScore}</h1>
               <p className="text-slate-400 text-lg">
                 Contador de puntos para tu partida
               </p>
@@ -50,7 +54,7 @@ export default function Home() {
             <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 mb-8">
               <div className="flex items-center justify-center gap-4">
                 <div className="text-center">
-                  <p className="text-4xl font-bold text-emerald-400">500</p>
+                  <p className="text-4xl font-bold text-emerald-400">{displayWinningScore}</p>
                   <p className="text-sm text-slate-400">Puntos para ganar</p>
                 </div>
                 <div className="w-px h-12 bg-slate-700" />

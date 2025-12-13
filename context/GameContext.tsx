@@ -4,7 +4,7 @@ import { createContext, useContext, useReducer, useEffect, useRef, ReactNode } f
 import { GameState, GameAction, Player, Round } from '@/types/game';
 import { saveCurrentGame, loadCurrentGame, clearCurrentGame, saveCompletedGame, finishGameManually, generateId } from '@/utils/storage';
 
-const WINNING_SCORE = 500;
+const DEFAULT_WINNING_SCORE = 500;
 
 const initialState: GameState = {
   id: '',
@@ -13,19 +13,20 @@ const initialState: GameState = {
   winner: null,
   startedAt: '',
   finishedAt: null,
+  winningScore: DEFAULT_WINNING_SCORE,
 };
 
-function calculateTotalScores(players: Player[], rounds: Round[]): Player[] {
+function calculateTotalScores(players: Player[], rounds: Round[], winningScore: number): Player[] {
   return players.map(player => {
     let totalScore = 0;
     
-    // Calcular total aplicando la regla: si al sumar una ronda supera 500, esos puntos no se suman
+    // Calcular total aplicando la regla: si al sumar una ronda supera el winningScore, esos puntos no se suman
     for (const round of rounds) {
       const roundScore = round.scores[player.id] || 0;
       const newTotal = totalScore + roundScore;
       
-      // Si al sumar esta ronda superaría 500, no se suman los puntos de esta ronda
-      if (newTotal > WINNING_SCORE) {
+      // Si al sumar esta ronda superaría el winningScore, no se suman los puntos de esta ronda
+      if (newTotal > winningScore) {
         // No sumar los puntos de esta ronda
         continue;
       }
@@ -40,12 +41,13 @@ function calculateTotalScores(players: Player[], rounds: Round[]): Player[] {
 function calculateIgnoredScores(
   players: Player[],
   existingRounds: Round[],
-  newScores: Record<string, number>
+  newScores: Record<string, number>,
+  winningScore: number
 ): Record<string, boolean> {
   const ignoredScores: Record<string, boolean> = {};
   
   // Calcular los totales actuales antes de agregar la nueva ronda
-  const currentTotals = calculateTotalScores(players, existingRounds);
+  const currentTotals = calculateTotalScores(players, existingRounds, winningScore);
   
   // Verificar para cada jugador si sus puntos serían ignorados
   players.forEach(player => {
@@ -53,8 +55,8 @@ function calculateIgnoredScores(
     const newScore = newScores[player.id] || 0;
     const newTotal = currentTotal + newScore;
     
-    // Si al sumar superaría 500, marcar como ignorado
-    if (newTotal > WINNING_SCORE) {
+    // Si al sumar superaría el winningScore, marcar como ignorado
+    if (newTotal > winningScore) {
       ignoredScores[player.id] = true;
     }
   });
@@ -62,9 +64,9 @@ function calculateIgnoredScores(
   return ignoredScores;
 }
 
-function checkWinner(players: Player[]): Player | null {
-  // Solo gana si llega exactamente a 500
-  const winner = players.find(p => p.totalScore === WINNING_SCORE);
+function checkWinner(players: Player[], winningScore: number): Player | null {
+  // Solo gana si llega exactamente al winningScore
+  const winner = players.find(p => p.totalScore === winningScore);
   return winner || null;
 }
 
@@ -75,6 +77,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...initialState,
         id: generateId(),
         players: action.players,
+        winningScore: action.winningScore,
         startedAt: new Date().toISOString(),
       };
       return newState;
@@ -85,7 +88,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const ignoredScores = calculateIgnoredScores(
         state.players,
         state.rounds,
-        action.scores
+        action.scores,
+        state.winningScore
       );
       
       const newRound: Round = {
@@ -97,8 +101,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
       
       const updatedRounds = [...state.rounds, newRound];
-      const updatedPlayers = calculateTotalScores(state.players, updatedRounds);
-      const winner = checkWinner(updatedPlayers);
+      const updatedPlayers = calculateTotalScores(state.players, updatedRounds, state.winningScore);
+      const winner = checkWinner(updatedPlayers, state.winningScore);
       
       const newState: GameState = {
         ...state,
@@ -115,7 +119,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.rounds.length === 0) return state;
       
       const updatedRounds = state.rounds.slice(0, -1);
-      const updatedPlayers = calculateTotalScores(state.players, updatedRounds);
+      const updatedPlayers = calculateTotalScores(state.players, updatedRounds, state.winningScore);
       
       return {
         ...state,
@@ -151,7 +155,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 interface GameContextType {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
-  startNewGame: (playerNames: string[]) => void;
+  startNewGame: (playerNames: string[], winningScore?: number) => void;
   addRound: (scores: Record<string, number>) => void;
   undoLastRound: () => void;
   resetGame: () => void;
@@ -186,13 +190,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
-  const startNewGame = (playerNames: string[]) => {
+  const startNewGame = (playerNames: string[], winningScore: number = DEFAULT_WINNING_SCORE) => {
     const players: Player[] = playerNames.map(name => ({
       id: generateId(),
       name,
       totalScore: 0,
     }));
-    dispatch({ type: 'SET_PLAYERS', players });
+    dispatch({ type: 'SET_PLAYERS', players, winningScore });
   };
 
   const addRound = (scores: Record<string, number>) => {

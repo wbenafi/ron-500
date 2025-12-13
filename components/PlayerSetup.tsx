@@ -5,11 +5,12 @@ import Button from './ui/Button';
 import Input from './ui/Input';
 
 interface PlayerSetupProps {
-  onStart: (players: string[]) => void;
+  onStart: (players: string[], winningScore: number) => void;
 }
 
 export default function PlayerSetup({ onStart }: PlayerSetupProps) {
   const [players, setPlayers] = useState<string[]>(['', '']);
+  const [winningScore, setWinningScore] = useState<string>('500');
   const [error, setError] = useState('');
 
   const addPlayer = () => {
@@ -41,16 +42,44 @@ export default function PlayerSetup({ onStart }: PlayerSetupProps) {
       setError('Los nombres de los jugadores deben ser únicos');
       return;
     }
+
+    const score = parseInt(winningScore, 10);
+    if (isNaN(score) || score <= 0) {
+      setError('El máximo de puntos debe ser un número mayor a 0');
+      return;
+    }
     
-    onStart(validPlayers);
+    onStart(validPlayers, score);
   };
 
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="bg-linear-to-b from-slate-800/80 to-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 shadow-xl">
         <h2 className="text-2xl font-bold text-white mb-6 text-center">
-          Configurar Jugadores
+          Nueva Partida
         </h2>
+
+        {/* Winning Score Input */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Puntos para ganar
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={winningScore}
+            onChange={(e) => {
+              setWinningScore(e.target.value);
+              setError('');
+            }}
+            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white text-center text-xl font-bold placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            placeholder="500"
+          />
+        </div>
+
+        <h3 className="text-lg font-bold text-white mb-6 text-center">
+          Jugadores
+        </h3>
         
         <div className="space-y-4 mb-6">
           {players.map((player, index) => (

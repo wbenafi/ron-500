@@ -7,9 +7,10 @@ interface RoundHistoryProps {
   rounds: Round[];
   players: Player[];
   onUndo: () => void;
+  winningScore: number;
 }
 
-export default function RoundHistory({ rounds, players, onUndo }: RoundHistoryProps) {
+export default function RoundHistory({ rounds, players, onUndo, winningScore }: RoundHistoryProps) {
   if (rounds.length === 0) {
     return (
       <div className="text-center py-8">
@@ -95,7 +96,7 @@ export default function RoundHistory({ rounds, players, onUndo }: RoundHistoryPr
                       {wasIgnored && (
                         <span 
                           className="text-amber-400 text-xs" 
-                          title="Estos puntos no se sumaron porque superarían 500"
+                          title={`Estos puntos no se sumaron porque superarían ${winningScore}`}
                         >
                           ⚠️
                         </span>

@@ -19,6 +19,7 @@ export interface GameState {
   winner: Player | null;
   startedAt: string;
   finishedAt: string | null;
+  winningScore: number; // Puntos necesarios para ganar (por defecto 500)
 }
 
 export interface CompletedGame {
@@ -36,7 +37,7 @@ export interface GameStats {
 }
 
 export type GameAction =
-  | { type: 'SET_PLAYERS'; players: Player[] }
+  | { type: 'SET_PLAYERS'; players: Player[]; winningScore: number }
   | { type: 'ADD_ROUND'; scores: Record<string, number> }
   | { type: 'UNDO_ROUND' }
   | { type: 'SET_WINNER'; winner: Player }

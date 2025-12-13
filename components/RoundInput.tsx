@@ -11,9 +11,10 @@ interface RoundInputProps {
   onSubmit: (scores: Record<string, number>) => void;
   isOpen: boolean;
   onClose: () => void;
+  winningScore: number;
 }
 
-export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onClose }: RoundInputProps) {
+export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onClose, winningScore }: RoundInputProps) {
   const [scores, setScores] = useState<Record<string, string>>(() => 
     Object.fromEntries(players.map(p => [p.id, '']))
   );
@@ -50,7 +51,7 @@ export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onC
           Ingresa los puntos de cada jugador para esta ronda. Puedes usar números negativos.
         </p>
         <p className="text-amber-400/80 text-xs px-1 -mt-2">
-          ⚠️ Si al sumar superas 500, esos puntos no contarán. Solo ganas con exactamente 500.
+          ⚠️ Si al sumar superas {winningScore}, esos puntos no contarán. Solo ganas con exactamente {winningScore}.
         </p>
         
         {players.map((player) => (

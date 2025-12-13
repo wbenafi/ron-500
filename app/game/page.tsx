@@ -74,7 +74,7 @@ export default function GamePage() {
 
         <h1 className="text-xl font-bold text-white flex items-center gap-2">
           <span className="text-2xl">🃏</span>
-          RON 500
+          RON {state.winningScore}
         </h1>
 
         <Button
@@ -117,7 +117,7 @@ export default function GamePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Scoreboard */}
         <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-5">
-          <ScoreBoard players={state.players} />
+          <ScoreBoard players={state.players} targetScore={state.winningScore} />
         </div>
 
         {/* History */}
@@ -126,6 +126,7 @@ export default function GamePage() {
             rounds={state.rounds}
             players={state.players}
             onUndo={undoLastRound}
+            winningScore={state.winningScore}
           />
         </div>
       </div>
@@ -137,6 +138,7 @@ export default function GamePage() {
         onSubmit={addRound}
         isOpen={showRoundInput}
         onClose={() => setShowRoundInput(false)}
+        winningScore={state.winningScore}
       />
 
       {/* Winner Modal */}
