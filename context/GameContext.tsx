@@ -17,12 +17,27 @@ const initialState: GameState = {
   winningScore: DEFAULT_WINNING_SCORE,
 };
 
-function calculateTotalScores(players: Player[], rounds: Round[], winningScore: number): Player[] {
+function calculateTotalScores(
+  players: Player[], 
+  rounds: Round[], 
+  winningScore: number,
+  playerAddedEvents: PlayerAddedEvent[] = []
+): Player[] {
   return players.map(player => {
-    let totalScore = 0;
+    // Buscar si el jugador fue agregado durante el juego
+    const playerAddedEvent = playerAddedEvents.find(e => e.playerId === player.id);
+    
+    // Determinar puntuación inicial y desde qué ronda empezar a contar
+    let totalScore = playerAddedEvent ? playerAddedEvent.initialScore : 0;
+    const playerAddedTimestamp = playerAddedEvent?.timestamp;
     
     // Calcular total aplicando la regla: si al sumar una ronda supera el winningScore, esos puntos no se suman
     for (const round of rounds) {
+      // Si el jugador fue agregado después de esta ronda, saltarla
+      if (playerAddedTimestamp && round.timestamp < playerAddedTimestamp) {
+        continue;
+      }
+      
       const roundScore = round.scores[player.id] || 0;
       const newTotal = totalScore + roundScore;
       
@@ -43,12 +58,13 @@ function calculateIgnoredScores(
   players: Player[],
   existingRounds: Round[],
   newScores: Record<string, number>,
-  winningScore: number
+  winningScore: number,
+  playerAddedEvents: PlayerAddedEvent[] = []
 ): Record<string, boolean> {
   const ignoredScores: Record<string, boolean> = {};
   
   // Calcular los totales actuales antes de agregar la nueva ronda
-  const currentTotals = calculateTotalScores(players, existingRounds, winningScore);
+  const currentTotals = calculateTotalScores(players, existingRounds, winningScore, playerAddedEvents);
   
   // Verificar para cada jugador si sus puntos serían ignorados
   players.forEach(player => {
@@ -91,7 +107,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         state.players,
         state.rounds,
         action.scores,
-        state.winningScore
+        state.winningScore,
+        state.playerAddedEvents
       );
       
       const newRound: Round = {
@@ -103,7 +120,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
       
       const updatedRounds = [...state.rounds, newRound];
-      const updatedPlayers = calculateTotalScores(state.players, updatedRounds, state.winningScore);
+      const updatedPlayers = calculateTotalScores(state.players, updatedRounds, state.winningScore, state.playerAddedEvents);
       const winner = checkWinner(updatedPlayers, state.winningScore);
       
       const newState: GameState = {
@@ -119,7 +136,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     
     case 'ADD_PLAYER': {
       // Recalcular totales para jugadores existentes
-      const existingPlayersWithScores = calculateTotalScores(state.players, state.rounds, state.winningScore);
+      const existingPlayersWithScores = calculateTotalScores(state.players, state.rounds, state.winningScore, state.playerAddedEvents);
       
       // Crear nuevo jugador con su puntuación inicial
       const newPlayerId = generateId();
@@ -139,10 +156,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         timestamp: new Date().toISOString(),
       };
       
-      // El nuevo jugador no tiene rondas previas, así que su total es su puntuación inicial
-      // Pero necesitamos aplicar la regla del winningScore si su initialScore ya supera el límite
-      // En este caso, como es un nuevo jugador, simplemente usamos su initialScore
-      const updatedPlayers = [...existingPlayersWithScores, newPlayer];
+      // Actualizar la lista de eventos de jugadores agregados
+      const updatedPlayerAddedEvents = [...state.playerAddedEvents, playerAddedEvent];
+      
+      // Recalcular totales para todos los jugadores (incluyendo el nuevo) con los eventos actualizados
+      // El nuevo jugador empezará con su initialScore y solo procesará rondas después de su timestamp
+      const allPlayers = [...existingPlayersWithScores, newPlayer];
+      const updatedPlayers = calculateTotalScores(allPlayers, state.rounds, state.winningScore, updatedPlayerAddedEvents);
       const winner = checkWinner(updatedPlayers, state.winningScore);
       
       return {
@@ -158,7 +178,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.rounds.length === 0) return state;
       
       const updatedRounds = state.rounds.slice(0, -1);
-      const updatedPlayers = calculateTotalScores(state.players, updatedRounds, state.winningScore);
+      const updatedPlayers = calculateTotalScores(state.players, updatedRounds, state.winningScore, state.playerAddedEvents);
       
       return {
         ...state,
