@@ -11,6 +11,7 @@ import WinnerModal from '@/components/WinnerModal';
 import AddPlayerModal from '@/components/AddPlayerModal';
 import Button from '@/components/ui/Button';
 import { useConfirm } from '@/hooks/useConfirm';
+import Image from 'next/image';
 
 export default function GamePage() {
   const router = useRouter();
@@ -86,7 +87,13 @@ export default function GamePage() {
         </Link>
 
         <h1 className="text-xl font-bold text-white flex items-center gap-2">
-          <span className="text-2xl">🃏</span>
+          <Image
+            src="/icon.svg"
+            alt="RON 500 Logo"
+            width={32}
+            height={32}
+            className="w-8 h-8"
+          />
           RON {state.winningScore}
         </h1>
 
@@ -130,8 +137,8 @@ export default function GamePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Scoreboard */}
         <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-5">
-          <ScoreBoard 
-            players={state.players} 
+          <ScoreBoard
+            players={state.players}
             targetScore={state.winningScore}
             onAddPlayer={() => setShowAddPlayerModal(true)}
           />

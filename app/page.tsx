@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import PlayerSetup from "@/components/PlayerSetup";
 import { useGame } from "@/context/GameContext";
 import { loadCurrentGame, getStats } from "@/utils/storage";
+import Image from "next/image";
 
 export default function Home() {
   const router = useRouter();
@@ -43,7 +44,15 @@ export default function Home() {
           <div className="text-center max-w-lg">
             {/* Logo/Title */}
             <div className="mb-8">
-              <div className="text-7xl mb-4">🃏</div>
+              <div className="mb-4 flex justify-center">
+                <Image 
+                  src="/icon.svg" 
+                  alt="RON 500 Logo" 
+                  width={160}
+                  height={160}
+                  className="w-32 h-32 md:w-40 md:h-40"
+                />
+              </div>
               <h1 className="text-5xl font-bold gradient-text mb-3">RON {displayWinningScore}</h1>
               <p className="text-slate-400 text-lg">
                 Contador de puntos para tu partida

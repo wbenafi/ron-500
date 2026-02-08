@@ -20,8 +20,8 @@ export const metadata: Metadata = {
   description:
     "Aplicación para llevar el conteo de puntos del juego de cartas RON 500",
   icons: {
-    icon: "/icon.svg",
-    apple: "/apple-icon.svg",
+    icon: "/favicon.ico",
+    apple: "/favicon.ico",
   },
 };
 
