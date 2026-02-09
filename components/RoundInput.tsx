@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Player } from '@/types/game';
 import Button from './ui/Button';
 import Modal from './ui/Modal';
@@ -18,6 +18,38 @@ export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onC
   const [scores, setScores] = useState<Record<string, string>>(() => 
     Object.fromEntries(players.map(p => [p.id, '']))
   );
+  const [isMobile, setIsMobile] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobile(mediaQuery.matches);
+    update();
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', update);
+    } else {
+      mediaQuery.addListener(update);
+    }
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', update);
+      } else {
+        mediaQuery.removeListener(update);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentIndex(0);
+    }
+  }, [isOpen, players.length]);
+
+  useEffect(() => {
+    if (currentIndex >= players.length) {
+      setCurrentIndex(0);
+    }
+  }, [currentIndex, players.length]);
 
   const updateScore = (playerId: string, value: string) => {
     // Allow negative numbers and empty string
@@ -44,6 +76,17 @@ export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onC
     setScores(prev => ({ ...prev, [playerId]: String(current + amount) }));
   };
 
+  const handleNext = () => {
+    setCurrentIndex(prev => Math.min(prev + 1, players.length - 1));
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex(prev => Math.max(prev - 1, 0));
+  };
+
+  const visiblePlayers = isMobile ? players.slice(currentIndex, currentIndex + 1) : players;
+  const isLastMobilePlayer = isMobile && currentIndex === players.length - 1;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Ronda ${roundNumber}`} size="md">
       <div className="space-y-4 sm:space-y-5">
@@ -54,7 +97,35 @@ export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onC
           ⚠️ Si al sumar superas {winningScore}, esos puntos no contarán. Solo ganas con exactamente {winningScore}.
         </p>
         
-        {players.map((player) => (
+        {isMobile && players.length > 0 && (
+          <div className="space-y-2 px-1">
+            <p className="text-xs text-slate-400">Puntajes por guardar</p>
+            <div className="flex flex-wrap gap-2">
+              {players.map((player, index) => {
+                const raw = scores[player.id];
+                const isEmpty = raw === '' || raw === '-' || raw == null;
+                const display = index > currentIndex && isEmpty ? '...' : isEmpty ? '0' : raw;
+                return (
+                  <button
+                    key={player.id}
+                    type="button"
+                    onClick={() => setCurrentIndex(index)}
+                    className={`rounded-full px-2 py-1 text-[11px] font-medium border transition-colors ${
+                      index === currentIndex
+                        ? 'border-emerald-500/60 text-emerald-300 bg-emerald-500/10'
+                        : 'border-slate-700/60 text-slate-300 bg-slate-800/40 hover:bg-slate-700/50'
+                    }`}
+                    aria-label={`Ir a ${player.name}`}
+                  >
+                    {player.name}: {display}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {visiblePlayers.map((player) => (
           <div key={player.id} className="space-y-3">
             <label className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-white font-medium gap-1">
               <span className="text-base sm:text-lg">{player.name}</span>
@@ -146,16 +217,32 @@ export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onC
           </div>
         ))}
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 sm:pt-6">
-          <Button variant="ghost" onClick={onClose} className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation">
-            Cancelar
-          </Button>
-          <Button variant="primary" onClick={handleSubmit} className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation">
-            Guardar Ronda
-          </Button>
-        </div>
+        {isMobile ? (
+          <div className="flex gap-2 pt-4">
+            {currentIndex > 0 && (
+              <Button variant="ghost" onClick={handlePrev} className="flex-1 min-h-[48px] text-base touch-manipulation">
+                Anterior
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              onClick={isLastMobilePlayer ? handleSubmit : handleNext}
+              className="flex-1 min-h-[48px] text-base touch-manipulation"
+            >
+              {isLastMobilePlayer ? 'Guardar Ronda' : 'Siguiente'}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 sm:pt-6">
+            <Button variant="ghost" onClick={onClose} className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation">
+              Cancelar
+            </Button>
+            <Button variant="primary" onClick={handleSubmit} className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation">
+              Guardar Ronda
+            </Button>
+          </div>
+        )}
       </div>
     </Modal>
   );
 }
-
