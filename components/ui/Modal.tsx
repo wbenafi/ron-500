@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, ReactNode } from 'react';
+import { useEffect, useRef, useState, ReactNode } from 'react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -12,6 +12,8 @@ interface ModalProps {
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [bottomOffset, setBottomOffset] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -28,6 +30,39 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
       document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateViewport = () => {
+      const vv = window.visualViewport;
+      if (vv) {
+        setViewportHeight(vv.height);
+        const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        setBottomOffset(offset);
+      } else {
+        setViewportHeight(window.innerHeight);
+        setBottomOffset(0);
+      }
+    };
+
+    updateViewport();
+
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener('resize', updateViewport);
+      vv.addEventListener('scroll', updateViewport);
+    }
+    window.addEventListener('resize', updateViewport);
+
+    return () => {
+      if (vv) {
+        vv.removeEventListener('resize', updateViewport);
+        vv.removeEventListener('scroll', updateViewport);
+      }
+      window.removeEventListener('resize', updateViewport);
+    };
+  }, [isOpen]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
@@ -47,6 +82,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleBackdropClick}
+      style={{ paddingBottom: bottomOffset ? `${bottomOffset}px` : undefined }}
     >
       <div
         ref={modalRef}
@@ -58,6 +94,11 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
           animate-in slide-in-from-bottom sm:zoom-in-95 duration-200
           max-h-[90svh] sm:max-h-[85svh] overflow-y-auto
         `}
+        style={
+          viewportHeight
+            ? { maxHeight: `${Math.round(viewportHeight * 0.9)}px` }
+            : undefined
+        }
       >
         {title && (
           <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-700/50 sticky top-0 bg-linear-to-b from-slate-800 to-slate-900 z-10">
