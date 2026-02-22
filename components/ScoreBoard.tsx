@@ -1,7 +1,8 @@
-'use client';
-
+import { MaterialIcons } from '@expo/vector-icons';
+import { StyleSheet, Text, View } from 'react-native';
 import { Player } from '@/types/game';
-import Button from './ui/Button';
+import Button from '@/components/ui/Button';
+import { colors, radii } from '@/constants/theme';
 
 interface ScoreBoardProps {
   players: Player[];
@@ -9,98 +10,188 @@ interface ScoreBoardProps {
   onAddPlayer?: () => void;
 }
 
+function getCardStyle(index: number) {
+  if (index === 0) {
+    return {
+      backgroundColor: 'rgba(245,158,11,0.14)',
+      borderColor: 'rgba(245,158,11,0.4)',
+    };
+  }
+
+  if (index === 1) {
+    return {
+      backgroundColor: 'rgba(148,163,184,0.16)',
+      borderColor: 'rgba(148,163,184,0.45)',
+    };
+  }
+
+  if (index === 2) {
+    return {
+      backgroundColor: 'rgba(249,115,22,0.16)',
+      borderColor: 'rgba(249,115,22,0.45)',
+    };
+  }
+
+  return {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  };
+}
+
+function getBadge(index: number) {
+  if (index <= 2) {
+    return (
+      <MaterialIcons
+        name="emoji-events"
+        size={22}
+        color={index === 0 ? '#fbbf24' : index === 1 ? '#cbd5e1' : '#fb923c'}
+      />
+    );
+  }
+
+  return <Text style={styles.positionText}>{index + 1}</Text>;
+}
+
 export default function ScoreBoard({ players, targetScore = 500, onAddPlayer }: ScoreBoardProps) {
   const sortedPlayers = [...players].sort((a, b) => b.totalScore - a.totalScore);
-  
-  const getPositionStyles = (index: number) => {
-    switch (index) {
-      case 0:
-        return 'bg-linear-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/50';
-      case 1:
-        return 'bg-linear-to-r from-slate-400/20 to-gray-400/20 border-slate-400/50';
-      case 2:
-        return 'bg-linear-to-r from-orange-600/20 to-amber-600/20 border-orange-600/50';
-      default:
-        return 'bg-slate-800/50 border-slate-700/50';
-    }
-  };
-
-  const getMedalEmoji = (index: number) => {
-    switch (index) {
-      case 0: return '🥇';
-      case 1: return '🥈';
-      case 2: return '🥉';
-      default: return `${index + 1}`;
-    }
-  };
-
-  const getProgressPercentage = (score: number) => {
-    return Math.min((score / targetScore) * 100, 100);
-  };
-
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          Puntuaciones
-        </h2>
-        {onAddPlayer && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onAddPlayer}
-            className="text-emerald-400 hover:text-emerald-300"
-          >
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Agregar Jugador
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.titleRow}>
+          <MaterialIcons name="leaderboard" size={24} color={colors.emerald} />
+          <Text style={styles.title}>Puntuaciones</Text>
+        </View>
+        {onAddPlayer ? (
+          <Button variant="ghost" size="sm" onPress={onAddPlayer}>
+            <>
+              <MaterialIcons name="person-add-alt-1" size={16} color="#6ee7b7" />
+              <Text style={styles.addPlayerText}>Agregar Jugador</Text>
+            </>
           </Button>
-        )}
-      </div>
-      
-      <div className="space-y-3">
-        {sortedPlayers.map((player, index) => (
-          <div
-            key={player.id}
-            className={`
-              relative overflow-hidden
-              border rounded-xl p-4
-              transition-all duration-300
-              ${getPositionStyles(index)}
-            `}
-          >
-            {/* Progress bar background */}
-            <div
-              className="absolute inset-0 bg-emerald-500/10 transition-all duration-500"
-              style={{ width: `${getProgressPercentage(player.totalScore)}%` }}
-            />
-            
-            <div className="relative flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{getMedalEmoji(index)}</span>
-                <span className="font-semibold text-white text-lg">{player.name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`
-                  text-2xl font-bold tabular-nums
-                  ${player.totalScore === targetScore ? 'text-emerald-400' : 'text-white'}
-                  ${player.totalScore < 0 ? 'text-rose-400' : ''}
-                  ${player.totalScore > targetScore ? 'text-amber-400' : ''}
-                `}>
-                  {player.totalScore}
-                </span>
-                <span className="text-slate-500 text-sm">/ {targetScore}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+        ) : null}
+      </View>
+
+      <View style={styles.list}>
+        {sortedPlayers.map((player, index) => {
+          const progress = Math.min((player.totalScore / targetScore) * 100, 100);
+
+          return (
+            <View key={player.id} style={[styles.card, getCardStyle(index)]}>
+              <View style={[styles.progress, { width: `${progress}%` }]} />
+              <View style={styles.cardContent}>
+                <View style={styles.playerIdentity}>
+                  {getBadge(index)}
+                  <Text style={styles.playerName} numberOfLines={1}>
+                    {player.name}
+                  </Text>
+                </View>
+                <View style={styles.scoreBlock}>
+                  <Text
+                    style={[
+                      styles.score,
+                      player.totalScore < 0 ? styles.scoreNegative : null,
+                      player.totalScore === targetScore ? styles.scoreWinner : null,
+                    ]}
+                  >
+                    {player.totalScore}
+                  </Text>
+                  <Text style={styles.scoreLimit}>/ {targetScore}</Text>
+                </View>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    gap: 12,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  list: {
+    gap: 10,
+  },
+  card: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    padding: 14,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  progress: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(16,185,129,0.12)',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  playerIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  positionText: {
+    color: colors.muted,
+    fontWeight: '700',
+    width: 22,
+    textAlign: 'center',
+  },
+  playerName: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  scoreBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  score: {
+    color: colors.text,
+    fontWeight: '700',
+    fontSize: 28,
+  },
+  scoreWinner: {
+    color: colors.emerald,
+  },
+  scoreNegative: {
+    color: colors.rose,
+  },
+  scoreLimit: {
+    color: colors.muted,
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  addPlayerText: {
+    color: '#6ee7b7',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});

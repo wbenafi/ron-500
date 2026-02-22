@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RON 500 (React Native + Expo)
 
-## Getting Started
+Aplicacion mobile para llevar el conteo de puntos de RON 500 en Android e iOS.
 
-First, run the development server:
+## Stack
+
+- Expo + Expo Router
+- React Native + TypeScript
+- AsyncStorage para persistencia local
+
+## Correr el proyecto
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Luego abre:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `a` para Android
+- `i` para iOS (macOS)
+- Escanea QR con Expo Go
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+```bash
+npm run start
+npm run android
+npm run ios
+npm run web
+npm run typecheck
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Estructura principal
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/index.tsx` - Pantalla principal
+- `app/game.tsx` - Partida activa
+- `app/stats.tsx` - Estadisticas
+- `context/GameContext.tsx` - Estado global del juego
+- `utils/storage.ts` - Persistencia AsyncStorage

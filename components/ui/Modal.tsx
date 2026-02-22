@@ -1,6 +1,15 @@
-'use client';
-
-import { useEffect, useRef, useState, ReactNode } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import {
+  KeyboardAvoidingView,
+  Modal as NativeModal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { ReactNode } from 'react';
+import { colors, radii, shadows } from '@/constants/theme';
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,113 +19,94 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
+const maxWidthBySize = {
+  sm: 380,
+  md: 520,
+  lg: 700,
+};
+
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const [bottomOffset, setBottomOffset] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const updateViewport = () => {
-      const vv = window.visualViewport;
-      if (vv) {
-        setViewportHeight(vv.height);
-        const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-        setBottomOffset(offset);
-      } else {
-        setViewportHeight(window.innerHeight);
-        setBottomOffset(0);
-      }
-    };
-
-    updateViewport();
-
-    const vv = window.visualViewport;
-    if (vv) {
-      vv.addEventListener('resize', updateViewport);
-      vv.addEventListener('scroll', updateViewport);
-    }
-    window.addEventListener('resize', updateViewport);
-
-    return () => {
-      if (vv) {
-        vv.removeEventListener('resize', updateViewport);
-        vv.removeEventListener('scroll', updateViewport);
-      }
-      window.removeEventListener('resize', updateViewport);
-    };
-  }, [isOpen]);
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
-
-  const sizes = {
-    sm: 'max-w-sm',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-  };
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
-      onClick={handleBackdropClick}
-      style={{ paddingBottom: bottomOffset ? `${bottomOffset}px` : undefined }}
+    <NativeModal
+      transparent
+      visible={isOpen}
+      animationType="fade"
+      onRequestClose={onClose}
     >
-      <div
-        ref={modalRef}
-        className={`
-          w-full ${sizes[size]}
-          bg-linear-to-b from-slate-800 to-slate-900
-          border-t sm:border border-slate-700/50
-          rounded-t-3xl sm:rounded-2xl shadow-2xl
-          animate-in slide-in-from-bottom sm:zoom-in-95 duration-200
-          max-h-[90svh] sm:max-h-[85svh] overflow-y-auto
-        `}
-        style={
-          viewportHeight
-            ? { maxHeight: `${Math.round(viewportHeight * 0.9)}px` }
-            : undefined
-        }
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardWrapper}
       >
-        {title && (
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-700/50 sticky top-0 bg-linear-to-b from-slate-800 to-slate-900 z-10">
-            <h2 className="text-lg sm:text-xl font-bold text-white">{title}</h2>
-            <button
-              onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
-              aria-label="Cerrar"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
-        <div className="p-4 sm:p-6">{children}</div>
-      </div>
-    </div>
+        <Pressable style={styles.backdrop} onPress={onClose}>
+          <Pressable
+            style={[styles.sheet, { maxWidth: maxWidthBySize[size] }]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            {title ? (
+              <View style={styles.header}>
+                <Text style={styles.title}>{title}</Text>
+                <Pressable onPress={onClose} style={styles.closeButton}>
+                  <MaterialIcons name="close" size={20} color={colors.muted} />
+                </Pressable>
+              </View>
+            ) : null}
+
+            <View style={styles.content}>{children}</View>
+          </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
+    </NativeModal>
   );
 }
 
+const styles = StyleSheet.create({
+  keyboardWrapper: {
+    flex: 1,
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(2,6,23,0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  sheet: {
+    width: '100%',
+    borderRadius: radii.lg,
+    backgroundColor: '#111c31',
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    ...shadows.card,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceSoft,
+  },
+  content: {
+    padding: 16,
+    gap: 10,
+  },
+});

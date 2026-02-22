@@ -1,0 +1,221 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Image, StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
+import { useGame } from '@/context/GameContext';
+import { getStats, loadCurrentGame } from '@/utils/storage';
+import Button from '@/components/ui/Button';
+import PlayerSetup from '@/components/PlayerSetup';
+import { colors, radii } from '@/constants/theme';
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const { startNewGame, loadSavedGame, state, hydrated } = useGame();
+  const [showSetup, setShowSetup] = useState(false);
+  const [hasSavedGame, setHasSavedGame] = useState(false);
+  const [gamesPlayed, setGamesPlayed] = useState(0);
+  const [savedWinningScore, setSavedWinningScore] = useState<number | null>(null);
+
+  const displayWinningScore = useMemo(() => {
+    return savedWinningScore || state.winningScore || 500;
+  }, [savedWinningScore, state.winningScore]);
+
+  const refreshHomeData = useCallback(async () => {
+    const [saved, stats] = await Promise.all([loadCurrentGame(), getStats()]);
+    setHasSavedGame(!!saved);
+    setSavedWinningScore(saved?.winningScore || null);
+    setGamesPlayed(stats.gamesPlayed);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshHomeData();
+    }, [refreshHomeData])
+  );
+
+  const handleStartGame = (players: string[], winningScore: number) => {
+    startNewGame(players, winningScore);
+    router.push('/game');
+  };
+
+  const handleContinueGame = async () => {
+    const loaded = await loadSavedGame();
+    if (loaded) {
+      router.push('/game');
+    }
+  };
+
+  if (!hydrated) {
+    return (
+      <View style={styles.loadingScreen}>
+        <Text style={styles.loadingText}>Cargando...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
+      {!showSetup ? (
+        <View style={styles.homeContainer}>
+          <View style={styles.logoBlock}>
+            <View style={styles.logoCircle}>
+              <Image source={require('@/assets/icon.png')} style={styles.logoImage} />
+            </View>
+            <Text style={styles.title}>RON {displayWinningScore}</Text>
+            <Text style={styles.subtitle}>Contador de puntos para tu partida</Text>
+          </View>
+
+          <View style={styles.statsCard}>
+            <View style={styles.statsCol}>
+              <Text style={styles.statsValue}>{displayWinningScore}</Text>
+              <Text style={styles.statsLabel}>Puntos para ganar</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.statsCol}>
+              <Text style={[styles.statsValue, styles.statsValueViolet]}>{gamesPlayed}</Text>
+              <Text style={styles.statsLabel}>Partidas jugadas</Text>
+            </View>
+          </View>
+
+          <View style={styles.actions}>
+            <Button variant="primary" size="lg" onPress={() => setShowSetup(true)}>
+              Nueva Partida
+            </Button>
+
+            {hasSavedGame ? (
+              <Button variant="secondary" size="lg" onPress={handleContinueGame}>
+                Continuar Partida
+              </Button>
+            ) : null}
+
+            <Button variant="ghost" onPress={() => router.push('/stats')}>
+              Estadisticas
+            </Button>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.setupContainer}>
+          <Pressable style={styles.backButton} onPress={() => setShowSetup(false)}>
+            <MaterialIcons name="arrow-back" size={20} color={colors.muted} />
+            <Text style={styles.backButtonText}>Volver</Text>
+          </Pressable>
+          <PlayerSetup onStart={handleStartGame} />
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: colors.muted,
+    fontSize: 16,
+  },
+  scroll: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  screen: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 20,
+    paddingBottom: 80,
+  },
+  homeContainer: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+    gap: 18,
+  },
+  logoBlock: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoCircle: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.45)',
+    backgroundColor: 'rgba(16,185,129,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  logoImage: {
+    width: 78,
+    height: 78,
+    borderRadius: 16,
+  },
+  title: {
+    color: '#e2e8f0',
+    fontSize: 48,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  subtitle: {
+    color: colors.muted,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(30,41,59,0.55)',
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+  },
+  statsCol: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  statsValue: {
+    color: '#6ee7b7',
+    fontSize: 36,
+    fontWeight: '800',
+  },
+  statsValueViolet: {
+    color: '#c4b5fd',
+  },
+  statsLabel: {
+    color: colors.muted,
+    fontSize: 13,
+  },
+  divider: {
+    width: 1,
+    height: 48,
+    backgroundColor: colors.border,
+  },
+  actions: {
+    gap: 10,
+  },
+  setupContainer: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
+    gap: 10,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+  },
+  backButtonText: {
+    color: colors.muted,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+});

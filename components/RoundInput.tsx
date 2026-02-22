@@ -1,9 +1,16 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Player } from '@/types/game';
-import Button from './ui/Button';
-import Modal from './ui/Modal';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import { colors, radii } from '@/constants/theme';
 
 interface RoundInputProps {
   players: Player[];
@@ -14,36 +21,30 @@ interface RoundInputProps {
   winningScore: number;
 }
 
-export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onClose, winningScore }: RoundInputProps) {
-  const [scores, setScores] = useState<Record<string, string>>(() => 
-    Object.fromEntries(players.map(p => [p.id, '']))
-  );
-  const [isMobile, setIsMobile] = useState(false);
+function createDefaultScores(players: Player[]) {
+  return Object.fromEntries(players.map((player) => [player.id, ''])) as Record<string, string>;
+}
+
+export default function RoundInput({
+  players,
+  roundNumber,
+  onSubmit,
+  isOpen,
+  onClose,
+  winningScore,
+}: RoundInputProps) {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 760;
+
+  const [scores, setScores] = useState<Record<string, string>>(() => createDefaultScores(players));
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 639px)');
-    const update = () => setIsMobile(mediaQuery.matches);
-    update();
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', update);
-    } else {
-      mediaQuery.addListener(update);
-    }
-    return () => {
-      if (mediaQuery.removeEventListener) {
-        mediaQuery.removeEventListener('change', update);
-      } else {
-        mediaQuery.removeListener(update);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     if (isOpen) {
+      setScores(createDefaultScores(players));
       setCurrentIndex(0);
     }
-  }, [isOpen, players.length]);
+  }, [isOpen, players]);
 
   useEffect(() => {
     if (currentIndex >= players.length) {
@@ -51,198 +52,269 @@ export default function RoundInput({ players, roundNumber, onSubmit, isOpen, onC
     }
   }, [currentIndex, players.length]);
 
-  const updateScore = (playerId: string, value: string) => {
-    // Allow negative numbers and empty string
-    if (value === '' || value === '-' || /^-?\d*$/.test(value)) {
-      setScores(prev => ({ ...prev, [playerId]: value }));
+  const visiblePlayers = useMemo(() => {
+    if (!isCompact) {
+      return players;
     }
+
+    return players.slice(currentIndex, currentIndex + 1);
+  }, [isCompact, players, currentIndex]);
+
+  const isLastCompactPlayer = isCompact && currentIndex === players.length - 1;
+
+  const updateScore = (playerId: string, value: string) => {
+    if (value === '' || value === '-' || /^-?\d*$/.test(value)) {
+      setScores((current) => ({ ...current, [playerId]: value }));
+    }
+  };
+
+  const handleQuickScore = (playerId: string, amount: number) => {
+    const current = scores[playerId];
+    const currentNumeric = current && current !== '-' ? parseInt(current, 10) || 0 : 0;
+    setScores((stored) => ({ ...stored, [playerId]: String(currentNumeric + amount) }));
   };
 
   const handleSubmit = () => {
     const numericScores: Record<string, number> = {};
-    
+
     for (const player of players) {
-      const value = scores[player.id];
-      numericScores[player.id] = value === '' || value === '-' ? 0 : parseInt(value, 10);
+      const rawValue = scores[player.id];
+      numericScores[player.id] = rawValue === '' || rawValue === '-' ? 0 : parseInt(rawValue, 10);
     }
-    
+
     onSubmit(numericScores);
-    setScores(Object.fromEntries(players.map(p => [p.id, ''])));
     onClose();
   };
 
-  const handleQuickScore = (playerId: string, amount: number) => {
-    const current = !scores[playerId] || scores[playerId] === '' || scores[playerId] === '-' ? 0 : parseInt(scores[playerId], 10);
-    setScores(prev => ({ ...prev, [playerId]: String(current + amount) }));
-  };
-
-  const handleNext = () => {
-    setCurrentIndex(prev => Math.min(prev + 1, players.length - 1));
-  };
-
-  const handlePrev = () => {
-    setCurrentIndex(prev => Math.max(prev - 1, 0));
-  };
-
-  const visiblePlayers = isMobile ? players.slice(currentIndex, currentIndex + 1) : players;
-  const isLastMobilePlayer = isMobile && currentIndex === players.length - 1;
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Ronda ${roundNumber}`} size="md">
-      <div className="space-y-4 sm:space-y-5">
-        <p className="text-slate-400 text-xs sm:text-sm px-1">
-          Ingresa los puntos de cada jugador para esta ronda. Puedes usar números negativos.
-        </p>
-        <p className="text-amber-400/80 text-xs px-1 -mt-2">
-          ⚠️ Si al sumar superas {winningScore}, esos puntos no contarán. Solo ganas con exactamente {winningScore}.
-        </p>
-        
-        {isMobile && players.length > 0 && (
-          <div className="space-y-2 px-1">
-            <p className="text-xs text-slate-400">Puntajes por guardar</p>
-            <div className="flex flex-wrap gap-2">
-              {players.map((player, index) => {
-                const raw = scores[player.id];
-                const isEmpty = raw === '' || raw === '-' || raw == null;
-                const display = index > currentIndex && isEmpty ? '...' : isEmpty ? '0' : raw;
-                return (
-                  <button
-                    key={player.id}
-                    type="button"
-                    onClick={() => setCurrentIndex(index)}
-                    className={`rounded-full px-2 py-1 text-[11px] font-medium border transition-colors ${
-                      index === currentIndex
-                        ? 'border-emerald-500/60 text-emerald-300 bg-emerald-500/10'
-                        : 'border-slate-700/60 text-slate-300 bg-slate-800/40 hover:bg-slate-700/50'
-                    }`}
-                    aria-label={`Ir a ${player.name}`}
-                  >
+      <View style={styles.container}>
+        <Text style={styles.caption}>
+          Ingresa puntos por jugador. Se permiten negativos.
+        </Text>
+        <Text style={styles.warning}>
+          Si un jugador supera {winningScore}, esos puntos se ignoran. Solo se gana con {winningScore} exactos.
+        </Text>
+
+        {isCompact && players.length > 0 ? (
+          <View style={styles.chipsWrapper}>
+            {players.map((player, index) => {
+              const raw = scores[player.id];
+              const empty = raw === '' || raw === '-' || raw == null;
+              const display = index > currentIndex && empty ? '...' : empty ? '0' : raw;
+
+              return (
+                <Pressable
+                  key={player.id}
+                  onPress={() => setCurrentIndex(index)}
+                  style={[styles.chip, index === currentIndex ? styles.chipActive : null]}
+                >
+                  <Text style={[styles.chipText, index === currentIndex ? styles.chipTextActive : null]}>
                     {player.name}: {display}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
 
-        {visiblePlayers.map((player) => (
-          <div key={player.id} className="space-y-3">
-            <label className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-white font-medium gap-1">
-              <span className="text-base sm:text-lg">{player.name}</span>
-              <span className="text-xs sm:text-sm text-slate-400">
-                Actual: {player.totalScore}
-              </span>
-            </label>
-            
-            {/* Mobile: input on top, buttons below. Desktop: buttons on sides */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
-              {/* Negative buttons - left side on desktop */}
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickScore(player.id, -10)}
-                  className="px-2 py-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 active:bg-rose-500/40 transition-colors text-base font-medium touch-manipulation"
-                >
-                  -10
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickScore(player.id, -5)}
-                  className="px-2 py-2 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 active:bg-rose-500/40 transition-colors text-base font-medium touch-manipulation"
-                >
-                  -5
-                </button>
-              </div>
-              
-              {/* Input - full width on mobile, flex-1 on desktop */}
-              <input
-                type="text"
-                inputMode="numeric"
-                value={scores[player.id] ?? '0'}
-                onChange={(e) => updateScore(player.id, e.target.value)}
+        <View style={styles.playersList}>
+          {visiblePlayers.map((player) => (
+            <View key={player.id} style={styles.playerCard}>
+              <View style={styles.playerHeader}>
+                <Text style={styles.playerName}>{player.name}</Text>
+                <Text style={styles.playerCurrent}>Actual: {player.totalScore}</Text>
+              </View>
+
+              <TextInput
+                value={scores[player.id] ?? ''}
+                onChangeText={(value) => updateScore(player.id, value)}
+                keyboardType="numbers-and-punctuation"
                 placeholder="0"
-                className="w-full sm:flex-1 px-3 sm:px-4 py-3 sm:py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white text-center text-xl sm:text-lg font-bold placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent min-h-[48px] touch-manipulation"
+                placeholderTextColor={colors.muted}
+                style={styles.scoreInput}
               />
-              
-              {/* Positive buttons - right side on desktop */}
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickScore(player.id, 5)}
-                  className="px-2 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 active:bg-emerald-500/40 transition-colors text-base font-medium touch-manipulation"
-                >
-                  +5
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickScore(player.id, 10)}
-                  className="px-2 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 active:bg-emerald-500/40 transition-colors text-base font-medium touch-manipulation"
-                >
-                  +10
-                </button>
-              </div>
-              
-              {/* All buttons below input on mobile */}
-              <div className="flex sm:hidden items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleQuickScore(player.id, -10)}
-                  className="flex-1 px-3 py-2.5 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 active:bg-rose-500/40 transition-colors text-sm font-medium touch-manipulation"
+
+              <View style={styles.quickActions}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => handleQuickScore(player.id, -10)}
+                  style={[styles.quickButton, styles.quickButtonNegative]}
+                  textStyle={styles.quickNegativeText}
                 >
                   -10
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickScore(player.id, -5)}
-                  className="flex-1 px-3 py-2.5 bg-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/30 active:bg-rose-500/40 transition-colors text-sm font-medium touch-manipulation"
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => handleQuickScore(player.id, -5)}
+                  style={[styles.quickButton, styles.quickButtonNegative]}
+                  textStyle={styles.quickNegativeText}
                 >
                   -5
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickScore(player.id, 5)}
-                  className="flex-1 px-3 py-2.5 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 active:bg-emerald-500/40 transition-colors text-sm font-medium touch-manipulation"
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => handleQuickScore(player.id, 5)}
+                  style={[styles.quickButton, styles.quickButtonPositive]}
+                  textStyle={styles.quickPositiveText}
                 >
                   +5
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickScore(player.id, 10)}
-                  className="flex-1 px-3 py-2.5 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 active:bg-emerald-500/40 transition-colors text-sm font-medium touch-manipulation"
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => handleQuickScore(player.id, 10)}
+                  style={[styles.quickButton, styles.quickButtonPositive]}
+                  textStyle={styles.quickPositiveText}
                 >
                   +10
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+                </Button>
+              </View>
+            </View>
+          ))}
+        </View>
 
-        {isMobile ? (
-          <div className="flex gap-2 pt-4">
-            {currentIndex > 0 && (
-              <Button variant="ghost" onClick={handlePrev} className="flex-1 min-h-[48px] text-base touch-manipulation">
+        {isCompact ? (
+          <View style={styles.compactActions}>
+            {currentIndex > 0 ? (
+              <Button variant="ghost" onPress={() => setCurrentIndex((index) => Math.max(0, index - 1))} style={styles.actionButton}>
                 Anterior
               </Button>
-            )}
+            ) : null}
             <Button
               variant="primary"
-              onClick={isLastMobilePlayer ? handleSubmit : handleNext}
-              className="flex-1 min-h-[48px] text-base touch-manipulation"
+              onPress={isLastCompactPlayer ? handleSubmit : () => setCurrentIndex((index) => Math.min(players.length - 1, index + 1))}
+              style={styles.actionButton}
             >
-              {isLastMobilePlayer ? 'Guardar Ronda' : 'Siguiente'}
+              {isLastCompactPlayer ? 'Guardar Ronda' : 'Siguiente'}
             </Button>
-          </div>
+          </View>
         ) : (
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 sm:pt-6">
-            <Button variant="ghost" onClick={onClose} className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation">
+          <View style={styles.actions}>
+            <Button variant="ghost" onPress={onClose} style={styles.actionButton}>
               Cancelar
             </Button>
-            <Button variant="primary" onClick={handleSubmit} className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation">
+            <Button variant="primary" onPress={handleSubmit} style={styles.actionButton}>
               Guardar Ronda
             </Button>
-          </div>
+          </View>
         )}
-      </div>
+      </View>
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 12,
+  },
+  caption: {
+    color: colors.muted,
+    fontSize: 13,
+  },
+  warning: {
+    color: colors.warning,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  chipsWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  chipActive: {
+    borderColor: colors.emerald,
+    backgroundColor: 'rgba(16,185,129,0.14)',
+  },
+  chipText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  chipTextActive: {
+    color: '#a7f3d0',
+  },
+  playersList: {
+    gap: 10,
+  },
+  playerCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: 12,
+    gap: 10,
+  },
+  playerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  playerName: {
+    color: colors.text,
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  playerCurrent: {
+    color: colors.muted,
+    fontSize: 12,
+  },
+  scoreInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: '#0b1528',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  quickButton: {
+    flex: 1,
+  },
+  quickButtonNegative: {
+    backgroundColor: 'rgba(244,63,94,0.10)',
+    borderColor: 'rgba(244,63,94,0.28)',
+  },
+  quickButtonPositive: {
+    backgroundColor: 'rgba(16,185,129,0.10)',
+    borderColor: 'rgba(16,185,129,0.28)',
+  },
+  quickNegativeText: {
+    color: '#fda4af',
+  },
+  quickPositiveText: {
+    color: '#6ee7b7',
+  },
+  compactActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  actionButton: {
+    flex: 1,
+  },
+});

@@ -1,7 +1,8 @@
-'use client';
-
-import { Round, Player, PlayerAddedEvent, GameEvent } from '@/types/game';
-import Button from './ui/Button';
+import { MaterialIcons } from '@expo/vector-icons';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { GameEvent, Player, PlayerAddedEvent, Round } from '@/types/game';
+import Button from '@/components/ui/Button';
+import { colors, radii } from '@/constants/theme';
 
 interface RoundHistoryProps {
   rounds: Round[];
@@ -11,151 +12,257 @@ interface RoundHistoryProps {
   winningScore: number;
 }
 
-export default function RoundHistory({ rounds, players, playerAddedEvents, onUndo, winningScore }: RoundHistoryProps) {
+export default function RoundHistory({
+  rounds,
+  players,
+  playerAddedEvents,
+  onUndo,
+  winningScore,
+}: RoundHistoryProps) {
   const getPlayerName = (playerId: string) => {
-    return players.find(p => p.id === playerId)?.name || 'Desconocido';
+    return players.find((player) => player.id === playerId)?.name || 'Desconocido';
   };
 
-  // Combine rounds and player added events, sorted by timestamp
-  const allEvents: GameEvent[] = [
-    ...rounds,
-    ...playerAddedEvents,
-  ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  const allEvents: GameEvent[] = [...rounds, ...playerAddedEvents].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
 
   if (allEvents.length === 0) {
     return (
-      <div className="text-center py-8">
-        <div className="text-6xl mb-4">🎴</div>
-        <p className="text-slate-400">No hay rondas registradas</p>
-        <p className="text-slate-500 text-sm mt-1">Agrega puntos para comenzar</p>
-      </div>
+      <View style={styles.emptyState}>
+        <MaterialIcons name="history-toggle-off" size={48} color={colors.muted} />
+        <Text style={styles.emptyTitle}>No hay rondas registradas</Text>
+        <Text style={styles.emptyHint}>Agrega puntos para empezar</Text>
+      </View>
     );
   }
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <svg className="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Historial
-        </h2>
-        
-        {rounds.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onUndo}
-            className="text-rose-400 hover:text-rose-300"
-          >
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-            </svg>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.titleRow}>
+          <MaterialIcons name="history" size={24} color={colors.violet} />
+          <Text style={styles.title}>Historial</Text>
+        </View>
+        {rounds.length > 0 ? (
+          <Button variant="ghost" size="sm" onPress={onUndo} textStyle={styles.undoText}>
             Deshacer
           </Button>
-        )}
-      </div>
-      
-      <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+        ) : null}
+      </View>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {[...allEvents].reverse().map((event) => {
-          // Check if it's a player added event
           if ('type' in event && event.type === 'player_added') {
             const playerEvent = event as PlayerAddedEvent;
+
             return (
-              <div
-                key={playerEvent.id}
-                className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-emerald-400">
-                      + Jugador agregado
-                    </span>
-                  </div>
-                  <span className="text-xs text-slate-500">
-                    {new Date(playerEvent.timestamp).toLocaleTimeString('es', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-                <div className="bg-slate-900/50 rounded-lg px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-300 text-sm font-medium">
-                      {playerEvent.playerName}
-                    </span>
-                    <span className="text-emerald-400 font-bold tabular-nums">
-                      {playerEvent.initialScore}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <View key={playerEvent.id} style={styles.eventCard}>
+                <View style={styles.eventHead}>
+                  <Text style={styles.playerAddedLabel}>+ Jugador agregado</Text>
+                  <Text style={styles.eventTime}>{formatTime(playerEvent.timestamp)}</Text>
+                </View>
+                <View style={styles.playerAddedRow}>
+                  <Text style={styles.playerAddedName}>{playerEvent.playerName}</Text>
+                  <Text style={styles.playerAddedScore}>{playerEvent.initialScore}</Text>
+                </View>
+              </View>
             );
           }
-          
-          // It's a round
+
           const round = event as Round;
+
           return (
-            <div
-              key={round.id}
-              className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-emerald-400">
-                  Ronda {round.roundNumber}
-                </span>
-                <span className="text-xs text-slate-500">
-                  {new Date(round.timestamp).toLocaleTimeString('es', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
+            <View key={round.id} style={styles.eventCard}>
+              <View style={styles.eventHead}>
+                <Text style={styles.roundLabel}>Ronda {round.roundNumber}</Text>
+                <Text style={styles.eventTime}>{formatTime(round.timestamp)}</Text>
+              </View>
+
+              <View style={styles.scoresGrid}>
                 {Object.entries(round.scores).map(([playerId, score]) => {
                   const wasIgnored = round.ignoredScores?.[playerId] || false;
+
                   return (
-                    <div
+                    <View
                       key={playerId}
-                      className={`flex items-center justify-between rounded-lg px-3 py-2 relative ${
-                        wasIgnored 
-                          ? 'bg-amber-500/10 border border-amber-500/30' 
-                          : 'bg-slate-900/50'
-                      }`}
+                      style={[styles.scoreRow, wasIgnored ? styles.scoreRowIgnored : null]}
                     >
-                      <span className="text-slate-300 text-sm truncate">
+                      <Text numberOfLines={1} style={styles.scorePlayerName}>
                         {getPlayerName(playerId)}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`
-                          font-bold tabular-nums
-                          ${wasIgnored ? 'text-amber-400 line-through opacity-60' : ''}
-                          ${!wasIgnored && score > 0 ? 'text-emerald-400' : ''}
-                          ${!wasIgnored && score < 0 ? 'text-rose-400' : ''}
-                          ${!wasIgnored && score === 0 ? 'text-slate-400' : ''}
-                        `}>
-                          {score > 0 ? '+' : ''}{score}
-                        </span>
-                        {wasIgnored && (
-                          <span 
-                            className="text-amber-400 text-xs" 
-                            title={`Estos puntos no se sumaron porque superarían ${winningScore}`}
-                          >
-                            ⚠️
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                      </Text>
+
+                      <View style={styles.scoreValueRow}>
+                        <Text
+                          style={[
+                            styles.scoreValue,
+                            score > 0 && !wasIgnored ? styles.scorePositive : null,
+                            score < 0 && !wasIgnored ? styles.scoreNegative : null,
+                            score === 0 && !wasIgnored ? styles.scoreZero : null,
+                            wasIgnored ? styles.scoreIgnored : null,
+                          ]}
+                        >
+                          {score > 0 ? '+' : ''}
+                          {score}
+                        </Text>
+                        {wasIgnored ? (
+                          <MaterialIcons
+                            name="warning-amber"
+                            size={14}
+                            color={colors.warning}
+                            accessibilityLabel={`Puntos ignorados por superar ${winningScore}`}
+                          />
+                        ) : null}
+                      </View>
+                    </View>
                   );
                 })}
-              </div>
-            </div>
+              </View>
+            </View>
           );
         })}
-      </div>
-    </div>
+      </ScrollView>
+    </View>
   );
 }
 
+function formatTime(timestamp: string) {
+  return new Date(timestamp).toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  undoText: {
+    color: '#fda4af',
+  },
+  scroll: {
+    maxHeight: 420,
+  },
+  scrollContent: {
+    gap: 10,
+    paddingBottom: 4,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 30,
+  },
+  emptyTitle: {
+    color: colors.text,
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  emptyHint: {
+    color: colors.muted,
+  },
+  eventCard: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: 12,
+    gap: 10,
+  },
+  eventHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  roundLabel: {
+    color: '#6ee7b7',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  eventTime: {
+    color: colors.muted,
+    fontSize: 12,
+  },
+  playerAddedLabel: {
+    color: '#6ee7b7',
+    fontWeight: '700',
+  },
+  playerAddedRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#0b1528',
+    borderRadius: radii.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  playerAddedName: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  playerAddedScore: {
+    color: '#6ee7b7',
+    fontWeight: '700',
+  },
+  scoresGrid: {
+    gap: 8,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: radii.sm,
+    backgroundColor: '#0b1528',
+  },
+  scoreRowIgnored: {
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.4)',
+    backgroundColor: 'rgba(245,158,11,0.1)',
+  },
+  scorePlayerName: {
+    color: colors.text,
+    fontSize: 13,
+    flex: 1,
+    marginRight: 10,
+  },
+  scoreValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  scoreValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  scorePositive: {
+    color: '#6ee7b7',
+  },
+  scoreNegative: {
+    color: '#fda4af',
+  },
+  scoreZero: {
+    color: colors.muted,
+  },
+  scoreIgnored: {
+    color: colors.warning,
+    textDecorationLine: 'line-through',
+  },
+});

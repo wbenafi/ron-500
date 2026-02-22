@@ -1,47 +1,69 @@
-import { InputHTMLAttributes, forwardRef } from 'react';
+import { forwardRef } from 'react';
+import {
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputProps,
+  TextStyle,
+  View,
+  ViewStyle,
+} from 'react-native';
+import { colors, radii } from '@/constants/theme';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<TextInputProps, 'style'> {
   label?: string;
   error?: string;
+  containerStyle?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>;
 }
 
-const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className = '', label, error, id, ...props }, ref) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
-    
+const Input = forwardRef<TextInput, InputProps>(
+  ({ label, error, containerStyle, inputStyle, placeholderTextColor, ...props }, ref) => {
     return (
-      <div className="w-full">
-        {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-slate-300 mb-2"
-          >
-            {label}
-          </label>
-        )}
-        <input
+      <View style={[styles.container, containerStyle]}>
+        {label ? <Text style={styles.label}>{label}</Text> : null}
+        <TextInput
           ref={ref}
-          id={inputId}
-          className={`
-            w-full px-4 py-3 
-            bg-slate-800/50 border border-slate-700 
-            rounded-xl text-white placeholder-slate-500
-            focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
-            transition-all duration-200
-            ${error ? 'border-rose-500 focus:ring-rose-500' : ''}
-            ${className}
-          `}
+          style={[styles.input, error ? styles.inputError : null, inputStyle]}
+          placeholderTextColor={placeholderTextColor || colors.muted}
           {...props}
         />
-        {error && (
-          <p className="mt-1.5 text-sm text-rose-400">{error}</p>
-        )}
-      </div>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </View>
     );
   }
 );
 
 Input.displayName = 'Input';
 
-export default Input;
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    gap: 6,
+  },
+  label: {
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    color: colors.text,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  inputError: {
+    borderColor: colors.rose,
+  },
+  error: {
+    color: colors.rose,
+    fontSize: 12,
+  },
+});
 
+export default Input;

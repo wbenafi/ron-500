@@ -1,11 +1,11 @@
-'use client';
-
-import Modal from './Modal';
-import Button from './Button';
+import { StyleSheet, Text, View } from 'react-native';
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import { colors } from '@/constants/theme';
 
 interface ConfirmModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onCancel: () => void;
   onConfirm: () => void;
   title?: string;
   message: string;
@@ -16,7 +16,7 @@ interface ConfirmModalProps {
 
 export default function ConfirmModal({
   isOpen,
-  onClose,
+  onCancel,
   onConfirm,
   title = 'Confirmar',
   message,
@@ -24,34 +24,42 @@ export default function ConfirmModal({
   cancelText = 'Cancelar',
   variant = 'default',
 }: ConfirmModalProps) {
-  const handleConfirm = () => {
-    onConfirm();
-    onClose();
-  };
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
-      <div className="space-y-4">
-        <p className="text-slate-300 text-center">{message}</p>
-        
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation"
-          >
+    <Modal isOpen={isOpen} onClose={onCancel} title={title} size="sm">
+      <View style={styles.container}>
+        <Text style={styles.message}>{message}</Text>
+        <View style={styles.actions}>
+          <Button variant="ghost" onPress={onCancel} style={styles.actionButton}>
             {cancelText}
           </Button>
           <Button
             variant={variant === 'danger' ? 'danger' : 'primary'}
-            onClick={handleConfirm}
-            className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation"
+            onPress={onConfirm}
+            style={styles.actionButton}
           >
             {confirmText}
           </Button>
-        </div>
-      </div>
+        </View>
+      </View>
     </Modal>
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  message: {
+    color: colors.text,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionButton: {
+    flex: 1,
+  },
+});

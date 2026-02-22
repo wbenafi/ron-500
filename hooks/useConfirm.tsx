@@ -1,6 +1,4 @@
-'use client';
-
-import { useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface ConfirmOptions {
@@ -12,49 +10,49 @@ interface ConfirmOptions {
 }
 
 export function useConfirm() {
-  const [confirmState, setConfirmState] = useState<{
-    isOpen: boolean;
-    options: ConfirmOptions | null;
-    onConfirm: (() => void) | null;
-  }>({
-    isOpen: false,
-    options: null,
-    onConfirm: null,
-  });
+  const [isOpen, setIsOpen] = useState(false);
+  const [options, setOptions] = useState<ConfirmOptions | null>(null);
+  const resolverRef = useRef<((value: boolean) => void) | null>(null);
 
-  const confirm = useCallback(
-    (options: ConfirmOptions): Promise<boolean> => {
-      return new Promise((resolve) => {
-        setConfirmState({
-          isOpen: true,
-          options,
-          onConfirm: () => {
-            resolve(true);
-            setConfirmState({ isOpen: false, options: null, onConfirm: null });
-          },
-        });
-      });
-    },
-    []
-  );
+  const closeWithResult = useCallback((result: boolean) => {
+    setIsOpen(false);
+    setOptions(null);
+    resolverRef.current?.(result);
+    resolverRef.current = null;
+  }, []);
 
-  const handleClose = useCallback(() => {
-    setConfirmState({ isOpen: false, options: null, onConfirm: null });
+  const confirm = useCallback((nextOptions: ConfirmOptions) => {
+    return new Promise<boolean>((resolve) => {
+      resolverRef.current = resolve;
+      setOptions(nextOptions);
+      setIsOpen(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (resolverRef.current) {
+        resolverRef.current(false);
+        resolverRef.current = null;
+      }
+    };
   }, []);
 
   const ConfirmDialog = () => {
-    if (!confirmState.isOpen || !confirmState.options) return null;
+    if (!options) {
+      return null;
+    }
 
     return (
       <ConfirmModal
-        isOpen={confirmState.isOpen}
-        onClose={handleClose}
-        onConfirm={confirmState.onConfirm || handleClose}
-        title={confirmState.options.title}
-        message={confirmState.options.message}
-        confirmText={confirmState.options.confirmText}
-        cancelText={confirmState.options.cancelText}
-        variant={confirmState.options.variant}
+        isOpen={isOpen}
+        onCancel={() => closeWithResult(false)}
+        onConfirm={() => closeWithResult(true)}
+        title={options.title}
+        message={options.message}
+        confirmText={options.confirmText}
+        cancelText={options.cancelText}
+        variant={options.variant}
       />
     );
   };
@@ -64,4 +62,3 @@ export function useConfirm() {
     ConfirmDialog,
   };
 }
-
