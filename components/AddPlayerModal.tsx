@@ -68,7 +68,7 @@ export default function AddPlayerModal({
       return;
     }
 
-    const scoreValue = initialScore || defaultInitialScore;
+    const scoreValue = initialScore === '' ? defaultInitialScore : initialScore;
     const parsedScore = parseInt(scoreValue, 10);
     if (Number.isNaN(parsedScore)) {
       setError('La puntuacion inicial debe ser valida');
@@ -105,7 +105,7 @@ export default function AddPlayerModal({
         <View>
           <Input
             label="Puntuacion inicial"
-            value={initialScore || defaultInitialScore}
+            value={initialScore}
             onChangeText={handleScoreChange}
             placeholder={defaultInitialScore}
             keyboardType="numbers-and-punctuation"

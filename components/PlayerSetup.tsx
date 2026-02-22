@@ -13,10 +13,11 @@ import { colors, radii, shadows } from '@/constants/theme';
 
 interface PlayerSetupProps {
   onStart: (players: string[], winningScore: number) => void;
+  inModal?: boolean;
 }
 
-export default function PlayerSetup({ onStart }: PlayerSetupProps) {
-  const [players, setPlayers] = useState<string[]>(['', '']);
+export default function PlayerSetup({ onStart, inModal = false }: PlayerSetupProps) {
+  const [players, setPlayers] = useState<string[]>(['', '', '', '']);
   const [winningScore, setWinningScore] = useState('500');
   const [error, setError] = useState('');
 
@@ -66,8 +67,8 @@ export default function PlayerSetup({ onStart }: PlayerSetupProps) {
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Nueva Partida</Text>
+      <View style={inModal ? styles.modalContent : styles.card}>
+        {!inModal ? <Text style={styles.title}>Nueva Partida</Text> : null}
 
         <Text style={styles.sectionTitle}>Puntos para ganar</Text>
         <TextInput
@@ -135,6 +136,9 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 14,
     ...shadows.card,
+  },
+  modalContent: {
+    gap: 14,
   },
   title: {
     color: colors.text,
