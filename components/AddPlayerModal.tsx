@@ -1,9 +1,9 @@
-'use client';
-
-import { useState, useMemo, useRef, useEffect, startTransition } from 'react';
-import Modal from './ui/Modal';
-import Button from './ui/Button';
-import Input from './ui/Input';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Modal from '@/components/ui/Modal';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import { colors } from '@/constants/theme';
 
 interface AddPlayerModalProps {
   isOpen: boolean;
@@ -11,6 +11,10 @@ interface AddPlayerModalProps {
   onAdd: (name: string, initialScore: number) => void;
   averageScore: number;
   existingNames: string[];
+}
+
+function roundToNearestFive(value: number) {
+  return Math.round(value / 5) * 5;
 }
 
 export default function AddPlayerModal({
@@ -21,142 +25,130 @@ export default function AddPlayerModal({
   existingNames,
 }: AddPlayerModalProps) {
   const [name, setName] = useState('');
-  const [initialScore, setInitialScore] = useState<string>('');
+  const [initialScore, setInitialScore] = useState('');
   const [error, setError] = useState('');
-  const prevIsOpenRef = useRef(false);
+  const wasOpenRef = useRef(false);
 
-  // Round to nearest number ending in 5 or 0
-  const roundToNearestFive = (num: number): number => {
-    return Math.round(num / 5) * 5;
-  };
+  const defaultInitialScore = useMemo(
+    () => String(roundToNearestFive(Math.round(averageScore))),
+    [averageScore]
+  );
 
-  // Calculate default initial score (rounded to nearest 5 or 0)
-  const defaultInitialScore = useMemo(() => roundToNearestFive(Math.round(averageScore)).toString(), [averageScore]);
-
-  // Update initial score when modal opens (not when averageScore changes while open)
   useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      // Modal just opened, set initial score to current average using startTransition
-      startTransition(() => {
-        setInitialScore(defaultInitialScore);
-      });
+    if (isOpen && !wasOpenRef.current) {
+      setInitialScore(defaultInitialScore);
     }
-    prevIsOpenRef.current = isOpen;
+
+    if (!isOpen && wasOpenRef.current) {
+      setName('');
+      setInitialScore(defaultInitialScore);
+      setError('');
+    }
+
+    wasOpenRef.current = isOpen;
   }, [isOpen, defaultInitialScore]);
 
-  // Reset form when modal closes via callback
   const handleClose = () => {
     setName('');
-    // Recalculate default score when closing (in case averageScore changed)
-    const newDefault = roundToNearestFive(Math.round(averageScore)).toString();
-    setInitialScore(newDefault);
+    setInitialScore(defaultInitialScore);
     setError('');
     onClose();
   };
 
   const handleSubmit = () => {
     const trimmedName = name.trim();
-    
+
     if (!trimmedName) {
       setError('El nombre es requerido');
       return;
     }
 
-    if (existingNames.some(n => n.toLowerCase() === trimmedName.toLowerCase())) {
+    if (existingNames.some((existing) => existing.toLowerCase() === trimmedName.toLowerCase())) {
       setError('Ya existe un jugador con ese nombre');
       return;
     }
 
-    const scoreValue = initialScore || displayInitialScore;
-    const score = parseInt(scoreValue, 10);
-    if (isNaN(score)) {
-      setError('La puntuación inicial debe ser un número válido');
+    const scoreValue = initialScore || defaultInitialScore;
+    const parsedScore = parseInt(scoreValue, 10);
+    if (Number.isNaN(parsedScore)) {
+      setError('La puntuacion inicial debe ser valida');
       return;
     }
 
-    onAdd(trimmedName, score);
+    onAdd(trimmedName, parsedScore);
     handleClose();
   };
 
   const handleScoreChange = (value: string) => {
-    // Allow negative numbers and empty string
     if (value === '' || value === '-' || /^-?\d*$/.test(value)) {
       setInitialScore(value);
       setError('');
     }
   };
 
-  // Use current input value or default initial score
-  const displayInitialScore = initialScore || defaultInitialScore;
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Agregar Jugador" size="sm" key={isOpen ? 'open' : 'closed'}>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Nombre del jugador
-          </label>
-          <Input
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setError('');
-            }}
-            placeholder="Nombre"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSubmit();
-              }
-            }}
-            error={error && error.includes('nombre') ? error : ''}
-            autoFocus
-          />
-        </div>
+    <Modal isOpen={isOpen} onClose={handleClose} title="Agregar Jugador" size="sm">
+      <View style={styles.container}>
+        <Input
+          label="Nombre del jugador"
+          value={name}
+          onChangeText={(value) => {
+            setName(value);
+            setError('');
+          }}
+          placeholder="Nombre"
+          autoCapitalize="words"
+          error={error.includes('nombre') ? error : ''}
+          autoFocus
+        />
 
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            Puntuación inicial
-          </label>
+        <View>
           <Input
-            type="text"
-            inputMode="numeric"
-            value={displayInitialScore}
-            onChange={(e) => handleScoreChange(e.target.value)}
+            label="Puntuacion inicial"
+            value={initialScore || defaultInitialScore}
+            onChangeText={handleScoreChange}
             placeholder={defaultInitialScore}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSubmit();
-              }
-            }}
-            error={error && error.includes('puntuación') ? error : ''}
+            keyboardType="numbers-and-punctuation"
+            error={error.includes('puntuacion') ? error : ''}
           />
-          <p className="text-xs text-slate-400 mt-1">
-            Promedio actual: {defaultInitialScore} puntos
-          </p>
-        </div>
+          <Text style={styles.averageText}>Promedio actual: {defaultInitialScore} puntos</Text>
+        </View>
 
-        {error && !error.includes('nombre') && !error.includes('puntuación') && (
-          <p className="text-rose-400 text-sm">{error}</p>
-        )}
+        {error && !error.includes('nombre') && !error.includes('puntuacion') ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : null}
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation"
-          >
+        <View style={styles.actions}>
+          <Button variant="ghost" onPress={handleClose} style={styles.actionButton}>
             Cancelar
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            className="flex-1 w-full sm:w-auto min-h-[48px] text-base touch-manipulation"
-          >
+          <Button variant="primary" onPress={handleSubmit} style={styles.actionButton}>
             Agregar
           </Button>
-        </div>
-      </div>
+        </View>
+      </View>
     </Modal>
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    gap: 14,
+  },
+  averageText: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 4,
+  },
+  error: {
+    color: colors.rose,
+    fontSize: 13,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionButton: {
+    flex: 1,
+  },
+});

@@ -1,41 +1,138 @@
-import { ButtonHTMLAttributes, forwardRef } from 'react';
+import { ReactNode } from 'react';
+import {
+  Pressable,
+  PressableProps,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  ViewStyle,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, radii } from '@/constants/theme';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
+type Size = 'sm' | 'md' | 'lg';
+
+interface ButtonProps extends Omit<PressableProps, 'style'> {
+  variant?: Variant;
+  size?: Size;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  children: ReactNode;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className = '', variant = 'primary', size = 'md', children, disabled, ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed';
-    
-    const variants = {
-      primary: 'bg-linear-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/25 focus:ring-emerald-500',
-      secondary: 'bg-slate-700 hover:bg-slate-600 text-slate-100 focus:ring-slate-500',
-      danger: 'bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white shadow-lg shadow-rose-500/25 focus:ring-rose-500',
-      ghost: 'bg-transparent hover:bg-slate-800 text-slate-300 hover:text-white focus:ring-slate-500',
-    };
-    
-    const sizes = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-5 py-2.5 text-base',
-      lg: 'px-8 py-3.5 text-lg',
-    };
-    
-    return (
-      <button
-        ref={ref}
-        className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-        disabled={disabled}
-        {...props}
-      >
-        {children}
-      </button>
+const sizeStyles: Record<Size, ViewStyle> = {
+  sm: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  md: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  lg: {
+    minHeight: 52,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+};
+
+const variantContainerStyles: Record<Exclude<Variant, 'primary' | 'danger'>, ViewStyle> = {
+  secondary: {
+    backgroundColor: colors.surfaceSoft,
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
+};
+
+const variantTextStyles: Record<Variant, TextStyle> = {
+  primary: { color: '#ffffff' },
+  secondary: { color: colors.text },
+  danger: { color: '#ffffff' },
+  ghost: { color: colors.muted },
+};
+
+export default function Button({
+  variant = 'primary',
+  size = 'md',
+  style,
+  textStyle,
+  children,
+  disabled,
+  ...props
+}: ButtonProps) {
+  const content =
+    typeof children === 'string' || typeof children === 'number' ? (
+      <Text style={[styles.text, variantTextStyles[variant], textStyle]}>{children}</Text>
+    ) : (
+      children
     );
-  }
-);
 
-Button.displayName = 'Button';
+  return (
+    <Pressable
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.base,
+        sizeStyles[size],
+        variant === 'secondary' || variant === 'ghost'
+          ? variantContainerStyles[variant]
+          : null,
+        pressed && !disabled ? styles.pressed : null,
+        disabled ? styles.disabled : null,
+        style,
+      ]}
+      {...props}
+    >
+      {variant === 'primary' || variant === 'danger' ? (
+        <LinearGradient
+          colors={variant === 'primary' ? [colors.emerald, colors.teal] : [colors.rose, '#ec4899']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradient}
+        >
+          {content}
+        </LinearGradient>
+      ) : (
+        content
+      )}
+    </Pressable>
+  );
+}
 
-export default Button;
-
+const styles = StyleSheet.create({
+  base: {
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    overflow: 'hidden',
+    gap: 8,
+  },
+  gradient: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  text: {
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  pressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+});
