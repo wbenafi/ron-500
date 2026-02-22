@@ -1,10 +1,11 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Image, StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
+import { Image, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useGame } from '@/context/GameContext';
 import { getStats, loadCurrentGame } from '@/utils/storage';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import PlayerSetup from '@/components/PlayerSetup';
 import { colors, radii } from '@/constants/theme';
 
@@ -34,6 +35,7 @@ export default function HomeScreen() {
   );
 
   const handleStartGame = (players: string[], winningScore: number) => {
+    setShowSetup(false);
     startNewGame(players, winningScore);
     router.push('/game');
   };
@@ -55,53 +57,56 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
-      {!showSetup ? (
-        <View style={styles.homeContainer}>
-          <View style={styles.logoBlock}>
-            <View style={styles.logoCircle}>
-              <Image source={require('@/assets/icon.png')} style={styles.logoImage} />
-            </View>
-            <Text style={styles.title}>RON {displayWinningScore}</Text>
-            <Text style={styles.subtitle}>Contador de puntos para tu partida</Text>
+      <View style={styles.homeContainer}>
+        <View style={styles.logoBlock}>
+          <View style={styles.logoCircle}>
+            <Image source={require('@/assets/icon.png')} style={styles.logoImage} />
           </View>
+          <Text style={styles.title}>RON {displayWinningScore}</Text>
+          <Text style={styles.subtitle}>Contador de puntos para tu partida</Text>
+        </View>
 
-          <View style={styles.statsCard}>
-            <View style={styles.statsCol}>
-              <Text style={styles.statsValue}>{displayWinningScore}</Text>
-              <Text style={styles.statsLabel}>Puntos para ganar</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.statsCol}>
-              <Text style={[styles.statsValue, styles.statsValueViolet]}>{gamesPlayed}</Text>
-              <Text style={styles.statsLabel}>Partidas jugadas</Text>
-            </View>
+        <View style={styles.statsCard}>
+          <View style={styles.statsCol}>
+            <Text style={styles.statsValue}>{displayWinningScore}</Text>
+            <Text style={styles.statsLabel}>Puntos para ganar</Text>
           </View>
-
-          <View style={styles.actions}>
-            <Button variant="primary" size="lg" onPress={() => setShowSetup(true)}>
-              Nueva Partida
-            </Button>
-
-            {hasSavedGame ? (
-              <Button variant="secondary" size="lg" onPress={handleContinueGame}>
-                Continuar Partida
-              </Button>
-            ) : null}
-
-            <Button variant="ghost" onPress={() => router.push('/stats')}>
-              Estadisticas
-            </Button>
+          <View style={styles.divider} />
+          <View style={styles.statsCol}>
+            <Text style={[styles.statsValue, styles.statsValueViolet]}>{gamesPlayed}</Text>
+            <Text style={styles.statsLabel}>Partidas jugadas</Text>
           </View>
         </View>
-      ) : (
-        <View style={styles.setupContainer}>
-          <Pressable style={styles.backButton} onPress={() => setShowSetup(false)}>
-            <MaterialIcons name="arrow-back" size={20} color={colors.muted} />
-            <Text style={styles.backButtonText}>Volver</Text>
-          </Pressable>
-          <PlayerSetup onStart={handleStartGame} />
+
+        <View style={styles.actions}>
+          <Button variant="primary" size="lg" onPress={() => setShowSetup(true)}>
+            <>
+              <MaterialIcons name="add-circle-outline" size={18} color="#ffffff" />
+              <Text style={styles.actionPrimaryText}>Nueva Partida</Text>
+            </>
+          </Button>
+
+          {hasSavedGame ? (
+            <Button variant="secondary" size="lg" onPress={handleContinueGame}>
+              <>
+                <MaterialIcons name="play-circle-outline" size={18} color={colors.text} />
+                <Text style={styles.actionSecondaryText}>Continuar Partida</Text>
+              </>
+            </Button>
+          ) : null}
+
+          <Button variant="ghost" onPress={() => router.push('/stats')}>
+            <>
+              <MaterialIcons name="insights" size={18} color={colors.muted} />
+              <Text style={styles.actionGhostText}>Estadisticas</Text>
+            </>
+          </Button>
         </View>
-      )}
+      </View>
+
+      <Modal isOpen={showSetup} onClose={() => setShowSetup(false)} title="Nueva Partida" size="md">
+        <PlayerSetup onStart={handleStartGame} inModal />
+      </Modal>
     </ScrollView>
   );
 }
@@ -200,22 +205,19 @@ const styles = StyleSheet.create({
   actions: {
     gap: 10,
   },
-  setupContainer: {
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-    gap: 10,
+  actionPrimaryText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    paddingVertical: 6,
+  actionSecondaryText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '700',
   },
-  backButtonText: {
+  actionGhostText: {
     color: colors.muted,
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

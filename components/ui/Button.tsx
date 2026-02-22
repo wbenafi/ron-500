@@ -92,14 +92,15 @@ export default function Button({
       {...props}
     >
       {variant === 'primary' || variant === 'danger' ? (
-        <LinearGradient
-          colors={variant === 'primary' ? [colors.emerald, colors.teal] : [colors.rose, '#ec4899']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradient}
-        >
+        <>
+          <LinearGradient
+            colors={variant === 'primary' ? [colors.emerald, colors.teal] : [colors.rose, '#ec4899']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradient}
+          />
           {content}
-        </LinearGradient>
+        </>
       ) : (
         content
       )}
