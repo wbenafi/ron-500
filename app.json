@@ -12,6 +12,7 @@
     },
     "icon": "./assets/icon.png",
     "android": {
+      "package": "com.walterbenavides.ron500",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0f172a"
@@ -28,6 +29,13 @@
     },
     "assetBundlePatterns": [
       "**/*"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "543abdd1-7ee2-4687-9ab8-d36b246e4aef"
+      }
+    },
+    "owner": "walter03bf"
   }
 }
