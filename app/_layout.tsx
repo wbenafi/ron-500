@@ -65,8 +65,11 @@ export default function RootLayout() {
                   screenOptions={{
                     headerShown: false,
                     contentStyle: { backgroundColor: 'transparent' },
-                  }}
-                />
+                  }}>
+                  <Stack.Screen name="index" options={{ title: 'RON 500 - Inicio' }} />
+                  <Stack.Screen name="game" options={{ title: 'RON 500 - Partida' }} />
+                  <Stack.Screen name="stats" options={{ title: 'RON 500 - Estadisticas' }} />
+                </Stack>
               </ThemeProvider>
             </View>
 

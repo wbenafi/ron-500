@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Button from '@/components/ui/Button';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -57,8 +58,16 @@ export default function StatsScreen() {
   };
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
-      <View style={styles.header}>
+    <>
+      <Head>
+        <title>RON 500 - Estadisticas</title>
+        <meta
+          name="description"
+          content="Consulta historial de partidas, ganadores y resultados del RON 500."
+        />
+      </Head>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
+        <View style={styles.header}>
         <Pressable style={styles.backLink} onPress={() => router.push('/')}>
           <MaterialIcons name="arrow-back" size={20} color={colors.muted} />
           <Text style={styles.backText}>Inicio</Text>
@@ -136,8 +145,9 @@ export default function StatsScreen() {
         </View>
       )}
 
-      <ConfirmDialog />
-    </ScrollView>
+        <ConfirmDialog />
+      </ScrollView>
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { Image, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useGame } from '@/context/GameContext';
 import { getStats, loadCurrentGame } from '@/utils/storage';
@@ -47,17 +48,23 @@ export default function HomeScreen() {
     }
   };
 
-  if (!hydrated) {
-    return (
-      <View style={styles.loadingScreen}>
-        <Text style={styles.loadingText}>Cargando...</Text>
-      </View>
-    );
-  }
-
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
-      <View style={styles.homeContainer}>
+    <>
+      <Head>
+        <title>RON 500 - Inicio</title>
+        <meta
+          name="description"
+          content="Inicia una partida de RON 500, continua juegos guardados y revisa tus estadisticas."
+        />
+      </Head>
+
+      {!hydrated ? (
+        <View style={styles.loadingScreen}>
+          <Text style={styles.loadingText}>Cargando...</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
+          <View style={styles.homeContainer}>
         <View style={styles.logoBlock}>
           <View style={styles.logoCircle}>
             <Image source={require('@/assets/icon.png')} style={styles.logoImage} />
@@ -104,10 +111,12 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <Modal isOpen={showSetup} onClose={() => setShowSetup(false)} title="Nueva Partida" size="md">
-        <PlayerSetup onStart={handleStartGame} inModal />
-      </Modal>
-    </ScrollView>
+          <Modal isOpen={showSetup} onClose={() => setShowSetup(false)} title="Nueva Partida" size="md">
+            <PlayerSetup onStart={handleStartGame} inModal />
+          </Modal>
+        </ScrollView>
+      )}
+    </>
   );
 }
 
