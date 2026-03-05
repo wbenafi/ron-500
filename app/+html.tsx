@@ -20,7 +20,12 @@ export default function Root({ children }: PropsWithChildren) {
                 padding: 0;
                 width: 100%;
                 min-height: 100%;
+                scrollbar-gutter: stable;
                 background: #0f172a;
+              }
+
+              body {
+                overflow-y: scroll;
               }
 
               #root, #expo-root, [data-expo-root] {
