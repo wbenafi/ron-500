@@ -48,23 +48,6 @@ export default function HomeScreen() {
     }
   };
 
-  if (!hydrated) {
-    return (
-      <>
-        <Head>
-          <title>RON 500 - Inicio</title>
-          <meta
-            name="description"
-            content="Inicia una partida de RON 500, continua juegos guardados y revisa tus estadisticas."
-          />
-        </Head>
-        <View style={styles.loadingScreen}>
-          <Text style={styles.loadingText}>Cargando...</Text>
-        </View>
-      </>
-    );
-  }
-
   return (
     <>
       <Head>
@@ -74,8 +57,14 @@ export default function HomeScreen() {
           content="Inicia una partida de RON 500, continua juegos guardados y revisa tus estadisticas."
         />
       </Head>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
-      <View style={styles.homeContainer}>
+
+      {!hydrated ? (
+        <View style={styles.loadingScreen}>
+          <Text style={styles.loadingText}>Cargando...</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
+          <View style={styles.homeContainer}>
         <View style={styles.logoBlock}>
           <View style={styles.logoCircle}>
             <Image source={require('@/assets/icon.png')} style={styles.logoImage} />
@@ -122,10 +111,11 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <Modal isOpen={showSetup} onClose={() => setShowSetup(false)} title="Nueva Partida" size="md">
-        <PlayerSetup onStart={handleStartGame} inModal />
-      </Modal>
-    </ScrollView>
+          <Modal isOpen={showSetup} onClose={() => setShowSetup(false)} title="Nueva Partida" size="md">
+            <PlayerSetup onStart={handleStartGame} inModal />
+          </Modal>
+        </ScrollView>
+      )}
     </>
   );
 }

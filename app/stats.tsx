@@ -67,7 +67,7 @@ export default function StatsScreen() {
         />
       </Head>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
-      <View style={styles.header}>
+        <View style={styles.header}>
         <Pressable style={styles.backLink} onPress={() => router.push('/')}>
           <MaterialIcons name="arrow-back" size={20} color={colors.muted} />
           <Text style={styles.backText}>Inicio</Text>
@@ -145,8 +145,8 @@ export default function StatsScreen() {
         </View>
       )}
 
-      <ConfirmDialog />
-    </ScrollView>
+        <ConfirmDialog />
+      </ScrollView>
     </>
   );
 }

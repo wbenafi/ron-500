@@ -77,23 +77,6 @@ export default function GameScreen() {
     }
   };
 
-  if (!hydrated || state.players.length === 0) {
-    return (
-      <>
-        <Head>
-          <title>RON 500 - Partida en curso</title>
-          <meta
-            name="description"
-            content="Registra rondas y puntajes de tu partida de RON 500 en tiempo real."
-          />
-        </Head>
-        <View style={styles.loadingScreen}>
-          <Text style={styles.loadingText}>Cargando...</Text>
-        </View>
-      </>
-    );
-  }
-
   return (
     <>
       <Head>
@@ -103,7 +86,13 @@ export default function GameScreen() {
           content="Registra rondas y puntajes de tu partida de RON 500 en tiempo real."
         />
       </Head>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
+
+      {!hydrated || state.players.length === 0 ? (
+        <View style={styles.loadingScreen}>
+          <Text style={styles.loadingText}>Cargando...</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
       <View style={styles.header}>
         <Pressable style={styles.backLink} onPress={() => router.push('/')}>
           <MaterialIcons name="arrow-back" size={20} color={colors.muted} />
@@ -184,8 +173,9 @@ export default function GameScreen() {
         existingNames={state.players.map((player) => player.name)}
       />
 
-      <ConfirmDialog />
-    </ScrollView>
+          <ConfirmDialog />
+        </ScrollView>
+      )}
     </>
   );
 }
