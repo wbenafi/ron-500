@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useGame } from '@/context/GameContext';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -78,14 +79,31 @@ export default function GameScreen() {
 
   if (!hydrated || state.players.length === 0) {
     return (
-      <View style={styles.loadingScreen}>
-        <Text style={styles.loadingText}>Cargando...</Text>
-      </View>
+      <>
+        <Head>
+          <title>RON 500 - Partida en curso</title>
+          <meta
+            name="description"
+            content="Registra rondas y puntajes de tu partida de RON 500 en tiempo real."
+          />
+        </Head>
+        <View style={styles.loadingScreen}>
+          <Text style={styles.loadingText}>Cargando...</Text>
+        </View>
+      </>
     );
   }
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
+    <>
+      <Head>
+        <title>RON 500 - Partida en curso</title>
+        <meta
+          name="description"
+          content="Registra rondas y puntajes de tu partida de RON 500 en tiempo real."
+        />
+      </Head>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
       <View style={styles.header}>
         <Pressable style={styles.backLink} onPress={() => router.push('/')}>
           <MaterialIcons name="arrow-back" size={20} color={colors.muted} />
@@ -168,6 +186,7 @@ export default function GameScreen() {
 
       <ConfirmDialog />
     </ScrollView>
+    </>
   );
 }
 

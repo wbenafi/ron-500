@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { Image, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useGame } from '@/context/GameContext';
 import { getStats, loadCurrentGame } from '@/utils/storage';
@@ -49,14 +50,31 @@ export default function HomeScreen() {
 
   if (!hydrated) {
     return (
-      <View style={styles.loadingScreen}>
-        <Text style={styles.loadingText}>Cargando...</Text>
-      </View>
+      <>
+        <Head>
+          <title>RON 500 - Inicio</title>
+          <meta
+            name="description"
+            content="Inicia una partida de RON 500, continua juegos guardados y revisa tus estadisticas."
+          />
+        </Head>
+        <View style={styles.loadingScreen}>
+          <Text style={styles.loadingText}>Cargando...</Text>
+        </View>
+      </>
     );
   }
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
+    <>
+      <Head>
+        <title>RON 500 - Inicio</title>
+        <meta
+          name="description"
+          content="Inicia una partida de RON 500, continua juegos guardados y revisa tus estadisticas."
+        />
+      </Head>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.screen}>
       <View style={styles.homeContainer}>
         <View style={styles.logoBlock}>
           <View style={styles.logoCircle}>
@@ -108,6 +126,7 @@ export default function HomeScreen() {
         <PlayerSetup onStart={handleStartGame} inModal />
       </Modal>
     </ScrollView>
+    </>
   );
 }
 
