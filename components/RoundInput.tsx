@@ -69,9 +69,11 @@ export default function RoundInput({
   };
 
   const handleQuickScore = (playerId: string, amount: number) => {
-    const current = scores[playerId];
-    const currentNumeric = current && current !== '-' ? parseInt(current, 10) || 0 : 0;
-    setScores((stored) => ({ ...stored, [playerId]: String(currentNumeric + amount) }));
+    setScores((stored) => {
+      const current = stored[playerId];
+      const currentNumeric = current && current !== '-' ? parseInt(current, 10) || 0 : 0;
+      return { ...stored, [playerId]: String(currentNumeric + amount) };
+    });
   };
 
   const handleSubmit = () => {
