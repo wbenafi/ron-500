@@ -71,13 +71,14 @@ export default function Button({
 }: ButtonProps) {
   const content =
     typeof children === 'string' || typeof children === 'number' ? (
-      <Text style={[styles.text, variantTextStyles[variant], textStyle]}>{children}</Text>
+      <Text selectable={false} style={[styles.text, variantTextStyles[variant], textStyle]}>{children}</Text>
     ) : (
       children
     );
 
   return (
     <Pressable
+      accessibilityRole="button"
       disabled={disabled}
       style={({ pressed }) => [
         styles.base,
